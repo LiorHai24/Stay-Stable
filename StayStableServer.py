@@ -80,7 +80,7 @@ def Check_App():
 
 
 if __name__ == "__main__":  
-    app.run(port=3306)
+    app.run(host="0.0.0.0", port=3306)
 
 #query = comes with the url and is written at the end of the url
 #to get it out: request.args.to_dict()
