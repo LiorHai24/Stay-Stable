@@ -52,7 +52,11 @@ def New_User():
         print("User does not exist, INSERT")
     '''
 
+<<<<<<< HEAD
      # Define a record to insert
+=======
+    # Define a record to insert
+>>>>>>> 9179b84bcefe09bfa85750fbe6ff3eacfb211121
     record = (first_name, last_name, phone_number, currect_dosage)
     # Check if any rows were returned
     sql = f"""INSERT INTO users (first_name, last_name, phone_number, current_dosage) VALUES (%s, %s, %s, %s)"""
