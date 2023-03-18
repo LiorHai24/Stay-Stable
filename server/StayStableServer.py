@@ -52,7 +52,7 @@ def New_User():
         print("User does not exist, INSERT")
     '''
 
-    # Define a record to insert
+     # Define a record to insert
     record = (first_name, last_name, phone_number, currect_dosage)
     # Check if any rows were returned
     sql = f"""INSERT INTO users (first_name, last_name, phone_number, current_dosage) VALUES (%s, %s, %s, %s)"""
@@ -72,7 +72,6 @@ def New_User():
 
 @app.route('/information', methods = ['PUT'])#from bracelet to server
 def Input_Information():
-    print(request.data)
     return
 @app.route('/information', methods = ['DELETE'])
 def Delete_Information():
@@ -96,14 +95,9 @@ def Check_App():
     return
 
 
-<<<<<<< HEAD:StayStableServer.py
 if __name__ == "__main__":
     #app.run(host="bso1emke9kuwl56sroz2-mysql.services.clever-cloud.com",port=3306)
     app.run(debug=True)
-=======
-if __name__ == "__main__":  
-    app.run(host="0.0.0.0", port=3306)
->>>>>>> 4e951106451515d2a7fa4ec8730b422fb18baaa4:server/StayStableServer.py
 
 #query = comes with the url and is written at the end of the url
 #to get it out: request.args.to_dict()
