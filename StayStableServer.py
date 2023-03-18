@@ -56,6 +56,7 @@ def New_User():
 
 @app.route('/information', methods = ['PUT'])#from bracelet to server
 def Input_Information():
+    print(request.data)
     return
 @app.route('/information', methods = ['DELETE'])
 def Delete_Information():
