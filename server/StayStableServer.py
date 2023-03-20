@@ -1,5 +1,6 @@
 from flask import Flask, json, request
 import mysql.connector
+import requests
 
 app = Flask(__name__)
 
@@ -29,12 +30,17 @@ def Get_Information():
     #need to ask matan if information on days will be sent in quary(in the url) or with body
     #קבלת הנתונים תעודת זהות וזמן
     #id, time_to_get
+    dic = json.loads(request.data)
+    id = dic['id']
+    time_to_get = dic['time_to_get']
+
     conn = get_db_connection()
     cursor = conn.cursor()
-    get_users_query = f""" SELECT * from vibrations where id = '{id}' """
-    cursor.execute(get_users_query)
+    get_information_of_user = f""" SELECT * from vibrations where id = '{id}' AND NOT time_to_get < '{time_to_get}'"""
+    cursor.execute(get_information_of_user)
     result_users = cursor.fetchall()
-    return result_users#?
+    response = requests.put(request.url, data = result_users)#needs to check what is the url of the application
+    return response#200 if success
 
 @app.route('/information/new', methods = ['PUT'])#from application to server
 def New_User():
@@ -61,10 +67,21 @@ def New_User():
         print("User does not exist, INSERT")
     '''
 
+    get_users_query = f""" SELECT * from users where first_name = '{first_name}' AND last_name = '{last_name}' AND phone_number = '{phone_number}'"""
 
-    # Define a record to insert
+    cursor.execute(get_users_query)
+    result_users = cursor.fetchall()
+    if result_users:#maybe check for change in the current_dosage if needed?
+        update_query = f"""UPDATE users SET current_dosage = {currect_dosage} where first_name = '{first_name}' AND last_name = '{last_name}' AND phone_number = '{phone_number}"""
+        cursor.execute(update_query)
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return json.dumps({'result': "User already exists"})
+    
     # Define a record to insert
     record = (first_name, last_name, phone_number, currect_dosage)
+
     # Check if any rows were returned
     sql = f"""INSERT INTO users (first_name, last_name, phone_number, current_dosage) VALUES (%s, %s, %s, %s)"""
 
@@ -86,18 +103,18 @@ def Input_Information():
     return
 @app.route('/information', methods = ['DELETE'])#from application to server
 def Delete_Information():
-#need to ask matan if information on days will be sent in quary(in the url) or with body
+#use with body requests body
     return
 
 @app.route('/alert', methods = ['GET'])#from server to application
-def Get_Alert():
+def Get_Alert():#not sure if needed maybe in the PUT method we will send an http request to the application of the fall
 
     return
 
 
-@app.route('/alert', methods = ['PUT'])#from bracelet to server
-def Input_Alert():
-    return
+#@app.route('/alert', methods = ['PUT'])#from bracelet to server
+#def Input_Alert():
+#    return
 
 @app.route('/bracelet', methods = ['HEAD'])
 def Check_Bracelet():
