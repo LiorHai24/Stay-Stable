@@ -24,11 +24,19 @@ def route_test():
     return response
 
 
-@app.route('/information', methods = ['GET'])#from server to application
+@app.route('/information', methods = ['GET'])#from server to application with dynamic input of days
 def Get_Information():
-    return
+    #need to ask matan if information on days will be sent in quary(in the url) or with body
+    #קבלת הנתונים תעודת זהות וזמן
+    #id, time_to_get
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    get_users_query = f""" SELECT * from vibrations where id = '{id}' """
+    cursor.execute(get_users_query)
+    result_users = cursor.fetchall()
+    return result_users#?
 
-@app.route('/information/new', methods = ['PUT'])#from bracelet to server
+@app.route('/information/new', methods = ['PUT'])#from application to server
 def New_User():
     dic = json.loads(request.data)
     first_name = dic["first_name"]
@@ -76,12 +84,14 @@ def New_User():
 @app.route('/information', methods = ['PUT'])#from bracelet to server
 def Input_Information():
     return
-@app.route('/information', methods = ['DELETE'])
+@app.route('/information', methods = ['DELETE'])#from application to server
 def Delete_Information():
+#need to ask matan if information on days will be sent in quary(in the url) or with body
     return
 
 @app.route('/alert', methods = ['GET'])#from server to application
 def Get_Alert():
+
     return
 
 
