@@ -166,14 +166,18 @@ def Input_Information():
 @app.route('/information', methods = ['DELETE'])#from application to server
 def Delete_Information():
 #use with body requests body
-
+    dic = json.loads(request.data)
+    time_to_delete = dic["time_to_delete"]
+    id = dic["id"]
+    
+    sql = "DELETE FROM table_name WHERE condition"
     return
 
 
 #if the function is from the server it shouldnt be in this format, its not an endpoint
 @app.route('/alert', methods = ['GET'])#from server to application
 def Get_Alert():#not sure if needed maybe in the PUT method we will send an http request to the application of the fall
-    
+
     return
 
 
