@@ -72,7 +72,7 @@ def New_User():
     cursor.execute(get_users_query)
     result_users = cursor.fetchall()
     if result_users:#maybe check for change in the current_dosage if needed?
-        update_query = f"""UPDATE users SET current_dosage = {currect_dosage} where first_name = '{first_name}' AND last_name = '{last_name}' AND phone_number = '{phone_number}"""
+        update_query = f"""UPDATE users SET current_dosage = {currect_dosage} where first_name = '{first_name}' AND last_name = '{last_name}' AND phone_number = '{phone_number}'"""
         cursor.execute(update_query)
         conn.commit()
         cursor.close()
@@ -127,7 +127,7 @@ def Check_App():
 
 if __name__ == "__main__":
     #app.run(host="bso1emke9kuwl56sroz2-mysql.services.clever-cloud.com",port=3306)
-    app.run(debug=True)
+    app.run(host = "0.0.0.0", debug=True, port= 3306)
 
 #query = comes with the url and is written at the end of the url
 #to get it out: request.args.to_dict()
