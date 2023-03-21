@@ -72,7 +72,7 @@ def New_User():
     cursor.execute(get_users_query)
     result_users = cursor.fetchall()
     if result_users:#maybe check for change in the current_dosage if needed?
-        update_query = f"""UPDATE users SET current_dosage = {currect_dosage} where first_name = '{first_name}' AND last_name = '{last_name}' AND phone_number = '{phone_number}"""
+        update_query = f"""UPDATE users SET current_dosage = {currect_dosage} where first_name = '{first_name}' AND last_name = '{last_name}' AND phone_number = '{phone_number}'"""
         cursor.execute(update_query)
         conn.commit()
         cursor.close()
@@ -91,7 +91,7 @@ def New_User():
     conn.commit()
 
     # Close the connection
-     # Close the cursor and connection
+    # Close the cursor and connection
     cursor.close()
     conn.close()
 
@@ -102,24 +102,28 @@ def New_User():
 # TODO - add body with parameters count, id.
 #        need to hash id, as it comes as mac address
 #        use sha256 for example https://www.geeksforgeeks.org/sha-in-python/
-#the information about users such as password or any sensitive information need to be hashed that way
+# the information about users such as password or any sensitive information need to be hashed that way
+
 @app.route('/information', methods = ['PUT'])#from bracelet to server
 def Input_Information():
     return
+
 @app.route('/information', methods = ['DELETE'])#from application to server
 def Delete_Information():
 #use with body requests body
     return
 
+
+#if the function is from the server it shouldnt be in this format, its not an endpoint
 @app.route('/alert', methods = ['GET'])#from server to application
 def Get_Alert():#not sure if needed maybe in the PUT method we will send an http request to the application of the fall
 
     return
 
 
-#@app.route('/alert', methods = ['PUT'])#from bracelet to server
-#def Input_Alert():
-#    return
+@app.route('/alert', methods = ['PUT'])#from bracelet to server
+def Input_Alert():
+    return
 
 @app.route('/bracelet', methods = ['HEAD'])
 def Check_Bracelet():
@@ -131,7 +135,7 @@ def Check_App():
 
 
 if __name__ == "__main__":
-    #app.run(host="bso1emke9kuwl56sroz2-mysql.services.clever-cloud.com",port=3306)
+    app.run(host="bso1emke9kuwl56sroz2-mysql.services.clever-cloud.com",port=3306)
     app.run(debug=True)
 
 #query = comes with the url and is written at the end of the url
