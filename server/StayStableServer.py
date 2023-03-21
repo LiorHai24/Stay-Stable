@@ -54,6 +54,11 @@ def New_User():
         mimetype = 'application/json')
     return response
 
+
+# TODO - add body with parameters count, id.
+#        need to hash id, as it comes as mac address
+#        use sha256 for example https://www.geeksforgeeks.org/sha-in-python/
+#the information about users such as password or any sensitive information need to be hashed that way
 @app.route('/information', methods = ['PUT'])#from bracelet to server
 def Input_Information():
     print(request.data)

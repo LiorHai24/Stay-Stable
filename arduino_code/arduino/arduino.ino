@@ -10,6 +10,10 @@
 #include <Arduino_JSON.h>
 #include <string.h>
 
+
+String ids = WiFi.macAddress();
+const char* id = ids.c_str();
+
 class Movement{
   private:
       double x;
@@ -131,7 +135,6 @@ int analyzeData(){
 
 void setup() {
   Serial.begin(115200);
-
   
   WiFiManager wifiManager;
   wifiManager.autoConnect("AutoConnectAP");
@@ -157,7 +160,8 @@ void sendShakingsData(int count){
   
   http.addHeader("Content-Type", "application/json");
   char  buffer[1000];
-  sprintf(buffer, "{\"count\":%d}", count);
+  Serial.println(id);
+  sprintf(buffer, "{\"id\":%s, \"count\":%d}", id, count);
   String httpRequestData = buffer;
   // Send HTTP POST request
   int httpResponseCode = http.PUT(httpRequestData);
