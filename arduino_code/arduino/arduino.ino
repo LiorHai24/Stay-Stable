@@ -201,7 +201,7 @@ void sendFallRequest(){
   http.addHeader("Content-Type", "application/json");
   char  buffer[1000];
   Serial.println(id);
-  sprintf(buffer, "{\"id\":%s", id);
+  sprintf(buffer, "{\"mac\":%s", id);
   String httpRequestData = buffer;
   // Send HTTP POST request
   int httpResponseCode = http.PUT(httpRequestData);
@@ -254,7 +254,7 @@ bool sendShakingsData(){
   char  buffer[10000];
   String s = convertMoves();
   Serial.println(s);
-  sprintf(buffer, "{\"id\":\"%s\", \"moves\":%s}", id, s.c_str());
+  sprintf(buffer, "{\"mac\":\"%s\", \"vibrations\":%s}", id, s.c_str());
   String httpRequestData = buffer;
   http.addHeader("Content-Length", String(httpRequestData.length()));
   // Send HTTP POST request
