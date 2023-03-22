@@ -106,6 +106,8 @@ def New_User():
 
 @app.route('/information', methods = ['PUT'])#from bracelet to server
 def Input_Information():
+    data = json.loads(request.data)#getting info from request body
+    print(data["moves"])
     return
 
 @app.route('/information', methods = ['DELETE'])#from application to server
@@ -135,7 +137,7 @@ def Check_App():
 
 
 if __name__ == "__main__":
-    app.run(host="bso1emke9kuwl56sroz2-mysql.services.clever-cloud.com", port=3306, debug=True)
+    app.run(host="0.0.0.0", port=3306)
 
 #query = comes with the url and is written at the end of the url
 #to get it out: request.args.to_dict()

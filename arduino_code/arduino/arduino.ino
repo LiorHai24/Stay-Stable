@@ -26,7 +26,6 @@ const char* id = ids.c_str();
  byte trigger3count = 0; //stores the counts past since trigger 3 was set true
  int angleChange = 0;
 
-
 class Movement{
   private:
       double x;
@@ -52,17 +51,37 @@ class Movements{
       void clear(){this->moves.clear();}
 };
 
+Movements* moves = new Movements();
+
+String convertMoves(){
+  std::vector<Movement> myMoves = moves->getMoves();
+  String ret = "[";
+
+  for(Movement move:myMoves){
+    char arr[50];
+    String temp;
+    sprintf(arr, "[%f,%f,%f]", move.getX(), move.getY(), move.getZ());
+    temp = arr;
+    ret += temp + ',';
+  }
+  ret.remove(ret.length()-1);
+  ret += "]";
+  return ret;
+}
+
+
 Adafruit_MPU6050 mpu;
 // Set web server port number to 80
 WiFiServer server(80);
 unsigned long lastTime = 0;
 // Set timer to 1 minute (60000)
-unsigned long timerDelay = 1000;
-
+unsigned long timerDelay = 2000;
+void mpu_read();
 void setupMpu();
 void checkSettings();
-void sendShakingsData(int count);
+bool sendShakingsData();
 int analyzeData();
+
 
 void setupMpu(){
   while (!Serial)
@@ -155,7 +174,7 @@ void setup() {
 
   server.begin();
 
-  setupMpu();
+  //setupMpu();
 
   Wire.begin();
   Wire.beginTransmission(MPU_addr);
@@ -215,9 +234,10 @@ void sendFallRequest(){
   Serial.println(errorMsg);
   Serial.print("result = ");
   Serial.println(int(result));
+  
 }
 
-void sendShakingsData(int count){
+bool sendShakingsData(){
   WiFiClient client;
   HTTPClient http;
   String serverPath = "http://10.100.102.2:3306/information";
@@ -230,10 +250,13 @@ void sendShakingsData(int count){
   String payload = "{}"; 
   
   http.addHeader("Content-Type", "application/json");
-  char  buffer[1000];
-  Serial.println(id);
-  sprintf(buffer, "{\"id\":%s, \"count\":%d}", id, count);
+  
+  char  buffer[10000];
+  String s = convertMoves();
+  Serial.println(s);
+  sprintf(buffer, "{\"id\":\"%s\", \"moves\":%s}", id, s.c_str());
   String httpRequestData = buffer;
+  http.addHeader("Content-Length", String(httpRequestData.length()));
   // Send HTTP POST request
   int httpResponseCode = http.PUT(httpRequestData);
   if (httpResponseCode>0) {
@@ -244,14 +267,14 @@ void sendShakingsData(int count){
   else {
     Serial.print("Error code: ");
     Serial.println(httpResponseCode);
-    return;
+    return true;
   }
   Serial.println(payload);
   JSONVar myObject = JSON.parse(payload);
   
   // JSON.typeof(jsonVar) can be used to get the type of the var
   if (JSON.typeof(myObject) == "undefined") {
-    return;
+    return true;
   }
     
   Serial.print("JSON object = ");
@@ -265,6 +288,7 @@ void sendShakingsData(int count){
   Serial.println(errorMsg);
   Serial.print("result = ");
   Serial.println(int(result));
+  return true;
 }
 
 void checkFalling(){
@@ -338,6 +362,48 @@ void checkFalling(){
 
 }
 
+void sendMacAddress(){
+  String header;
+  WiFiClient client = server.available(); // Listen for incoming clients
+  header = "";
+  String currentLine = "";                // make a String to hold incoming data from the client
+  if(client){
+    Serial.println("New Client."); // print a message out in the serial port
+    while (client.connected()) { 
+      if (client.available()) {                           // If a new client connects,
+                    
+          char c = client.read();             // read a byte, then
+          Serial.write(c);                    // print it out the serial monitor
+          header += c;
+          if (c == '\n') {                    // if the byte is a newline character
+            // if the current line is blank, you got two newline characters in a row.
+            // that's the end of the client HTTP request, so send a response:
+            if (currentLine.length() == 0) {
+              // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
+              // and a content-type so the client knows what's coming, then a blank line:
+              client.println("HTTP/1.1 200 OK");
+              client.println("Content-type:text/html");
+              client.println();
+              
+              // turns the GPIOs on and off
+              if (header.indexOf("GET /MAC") >= 0) {
+                client.println(id);
+              }
+              client.stop();
+              Serial.println("Client disconnected.");
+              Serial.println("");
+            } else { // if you got a newline, then clear currentLine
+              currentLine = "";
+            }
+          } else if (c != '\r') {  // if you got anything else but a carriage return character,
+            currentLine += c;      // add it to the end of the currentLine
+          }
+        }
+      }
+    // Clear the header variable
+  } 
+}
+
 void receiveMovement(){
     checkFalling();
     sensors_event_t a, g, temp;
@@ -348,33 +414,25 @@ void receiveMovement(){
     Serial.print(a.acceleration.y);
     Serial.print(", Z: ");
     Serial.print(a.acceleration.z);
-    //Movement m(a.acceleration.x, a.acceleration.y, a.acceleration.z);
-    //moves.addMove(m);
+    Serial.println();
+    Movement m(a.acceleration.x, a.acceleration.y, a.acceleration.z);
+    moves->addMove(m);
+    Serial.println("result = " + convertMoves());
 }
 
 void loop() {
-  WiFiClient client = server.available(); // Listen for incoming clients
+  bool sent = false;
+  sendMacAddress();
   receiveMovement();
-  lastTime = millis();  
-  Movements moves;
-  if (client) {                             // If a new client connects,
-    Serial.println("New Client.");          // print a message out in the serial port
-    String currentLine = "";                // make a String to hold incoming data from the client
-    while (client.connected()) { 
-      receiveMovement();
-      Serial.print("\n");
-      delay(50);           // loop while the client's connected
-      if ((millis() - lastTime) > timerDelay) {
-          int count = analyzeData();
-          //sendShakingsData(count);
-          lastTime = millis();
-      }
-      
+  delay(100);
+  Serial.println();
+  if ((millis() - lastTime) > timerDelay) {
+    sent = sendShakingsData();
+    if(sent){
+      moves->clear();   
+      lastTime = millis();      
     }
-    client.stop();
-    Serial.println("Client disconnected.");
-    Serial.println("");
-  } 
+  }
 }
 
 
