@@ -1,8 +1,9 @@
-from flask import Flask, json, request
 import mysql.connector
+from flask import Flask, json, request
 import requests
 import hashlib
 from datetime import datetime ,timedelta
+import StableFunctions
 
 app = Flask(__name__)
 
@@ -43,10 +44,9 @@ def Get_Information():
         get_information_of_user = f""" SELECT dosage_id, current_date FROM vibrations WHERE id = '{mac}' AND  time_to_get >= '{time_to_get}'"""
         cursor.execute(get_information_of_user)
         result_users = cursor.fetchall()
-        response = requests.put(request.url, data = result_users)#needs to check what is the url of the application
-        if response == 200:
-            return json.dumps({'result': 'The information was sent successfuly.'})
-        return json.dumps({'result': 'Something went wrong: code error {}.'.format(response)})
+
+        return StableFunctions.jsonize(cursor, result_users)
+    
     return json.dumps({'result': 'Something went wrong: could not find mac for the given id'})
     
     
@@ -59,6 +59,7 @@ def New_User():
     last_name = dic["last_name"]
     phone_number = dic["phone_number"]
     currect_dosage = dic["current_dosage"]
+    email = dic["email"]
 
     # Create a cursor object to execute SQL queries
     conn = get_db_connection()
@@ -67,10 +68,10 @@ def New_User():
     # Define a record to insert
     mac = str(mac)
     crypted_mac = hashlib.sha256(mac.encode()).hexdigest()
-    record = (first_name, last_name, phone_number, currect_dosage, crypted_mac)
+    record = (first_name, last_name, phone_number, email, currect_dosage, crypted_mac)
 
     # Check if any rows were returned
-    sql = f"""INSERT INTO users (first_name, last_name, phone_number, current_dosage, crypted_mac) VALUES (%s, %s, %s, %s, %s)"""
+    sql = f"""INSERT INTO users (first_name, last_name, phone_number, email, current_dosage, crypted_mac) VALUES (%s, %s, %s, %s, %s, %s)"""
 
     cursor.execute(sql, record)
 
@@ -84,20 +85,24 @@ def New_User():
 
     AnsJson = json.dumps({'result': "The user was added successfuly!"})
     return AnsJson
+
+
+
 @app.route('/information/new/contact', methods = ['PUT'])#from application to server
 def New_Contact():
     dic = json.loads(request.data)
     first_name = dic["first_name"]
     last_name = dic["last_name"]
     phone_number = dic["phone_number"]
+    email = dic["email"]
     id = dic["id"]
     # Create a cursor object to execute SQL queries
     conn = get_db_connection()
     cursor = conn.cursor()
-    record = (phone_number, id, first_name, last_name)
+    record = (phone_number, email, id, first_name, last_name)
 
     # Check if any rows were returned
-    sql = f"""INSERT INTO contacts (phone_number, id, first_name, last_name) VALUES (%s, %s, %s, %s)"""
+    sql = f"""INSERT INTO contacts (phone_number, email, id, first_name, last_name) VALUES (%s, %s, %s, %s, %s)"""
 
     cursor.execute(sql, record)
 
@@ -111,6 +116,29 @@ def New_Contact():
 
     AnsJson = json.dumps({'result': "The contact was added successfuly!"})
     return AnsJson
+
+
+@app.route('/information/contacts', methods = ['GET'])#from application to server get the contacts of this person
+def Get_Contacts():
+    dic = json.loads(request.data)
+    id = dic["id"]
+    # Create a cursor object to execute SQL queries
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Check if any rows were returned
+    contacts_query = f"""SELECT phone_number, email, first_name, last_name FROM contacts WHERE id = '{id}'"""
+
+    cursor.execute(contacts_query)
+    contacts_table = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    return StableFunctions.jsonize(cursor, contacts_table)
+
+        
+
+    
+
 # TODO - add body with parameters count, id.
 #        need to hash id, as it comes as mac address
 #        use sha256 for example https://www.geeksforgeeks.org/sha-in-python/
@@ -155,7 +183,7 @@ def Delete_Information():
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    get_crypted_mac = f""" SELECT crypted_mac from users where id = '{id}' """
+    get_crypted_mac = f""" SELECT crypted_mac FROM users where id = '{id}' """
     cursor.execute(get_crypted_mac)
     result_mac = cursor.fetchall()
 
@@ -164,7 +192,7 @@ def Delete_Information():
 
     cursor.close()
     conn.close()
-    return json.dumps({'result': 'All information that is older than {} days was deleted successfuly.'.format(time_to_delete)})
+    return json.dumps({'result': f'All information that is older than {time_to_delete} days was deleted successfuly.'})
 
 
 @app.route('/alert', methods = ['PUT'])#from bracelet to server
@@ -176,22 +204,24 @@ def Input_Alert():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    user_quary = f"SELECT id, phone_number FROM users where crypted_mac = {crypted_mac}"#Get the user
-    cursor.execute(user_quary)
+    user_query = f"SELECT id, first_name, last_name FROM users WHERE crypted_mac = '{crypted_mac}';"
+    cursor.execute(user_query)
     user_row = cursor.fetchall()
     if user_row is not None:
-        id = user_row[0]
-        phone_number = user_row[1]
-        user_and_contacts_query = f"SELECT id, phone_number FROM users RIGHT JOIN contacts ON users.id = contacts.id WHERE id = {id}"
-        cursor.execute(user_and_contacts_query)#the table
-        user_and_contacts_table = cursor.fetchall()
-        #need to check how to access or how to send the table to GAL so she can notify these people
+        user_id = user_row[0][0]
+        user_first_name = user_row[0][1]
+        user_last_name = user_row[0][2]
+        contacts_query = f"SELECT email FROM contacts WHERE id = {user_id}"
+        cursor.execute(contacts_query)#the table
+        contacts_table = cursor.fetchall()
+        #need to check how to email these addresses
+        StableFunctions.send_email(contacts_table, user_first_name, user_last_name)
 
 
     cursor.close()
     conn.close()
 
-    return
+    return json.dumps({'result': 'Message about a fall was sent to all your contacts'})
 
 
 if __name__ == "__main__":
