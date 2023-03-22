@@ -267,14 +267,14 @@ bool sendShakingsData(){
   else {
     Serial.print("Error code: ");
     Serial.println(httpResponseCode);
-    return true;
+    return false;
   }
   Serial.println(payload);
   JSONVar myObject = JSON.parse(payload);
   
   // JSON.typeof(jsonVar) can be used to get the type of the var
   if (JSON.typeof(myObject) == "undefined") {
-    return true;
+    return false;
   }
     
   Serial.print("JSON object = ");
