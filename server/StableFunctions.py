@@ -2,7 +2,7 @@ import smtplib
 from flask import json
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-
+import pywhatkit
 def send_email(table, first_name, last_name):
     # Set up the SMTP server
     smtp_server = 'smtp.gmail.com'
