@@ -2,7 +2,7 @@ from flask import Flask, json, request
 import mysql.connector
 import requests
 import hashlib
-from datetime import datetime
+from datetime import datetime ,timedelta
 
 app = Flask(__name__)
 
@@ -35,13 +35,20 @@ def Get_Information():
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    get_information_of_user = f""" SELECT * from vibrations where id = '{id}' AND NOT time_to_get < '{time_to_get}'"""
-    cursor.execute(get_information_of_user)
-    result_users = cursor.fetchall()
-    response = requests.put(request.url, data = result_users)#needs to check what is the url of the application
-    if response == 200:
-        return json.dumps({'result': 'The information was sent successfuly.'})
-    return json.dumps({'result': 'Something went wrong: code error {}.'.format(response)})
+    mac_query = f"SELECT crypted_mac FROM users WHERE id = {id}"
+    cursor.execute(mac_query)
+    mac_table = cursor.fetchall()
+    if mac_table is not None:
+        mac = mac_table[0]
+        get_information_of_user = f""" SELECT dosage_id, current_date FROM vibrations WHERE id = '{mac}' AND  time_to_get >= '{time_to_get}'"""
+        cursor.execute(get_information_of_user)
+        result_users = cursor.fetchall()
+        response = requests.put(request.url, data = result_users)#needs to check what is the url of the application
+        if response == 200:
+            return json.dumps({'result': 'The information was sent successfuly.'})
+        return json.dumps({'result': 'Something went wrong: code error {}.'.format(response)})
+    return json.dumps({'result': 'Something went wrong: could not find mac for the given id'})
+    
     
 
 @app.route('/information/new', methods = ['PUT'])#from application to server
@@ -52,39 +59,14 @@ def New_User():
     last_name = dic["last_name"]
     phone_number = dic["phone_number"]
     currect_dosage = dic["current_dosage"]
+
     # Create a cursor object to execute SQL queries
     conn = get_db_connection()
     cursor = conn.cursor()
-
-    # Execute an SQL statement to insert the record into a table
-    '''
-    get_users_query = f""" SELECT * from users where first_name = '{first_name}' """
-
-    cursor.execute(get_users_query)
-    result_users = cursor.fetchall()
-
-    if result_users:
-        print("User Exists, UPDATE")
-    
-    else:
-        print("User does not exist, INSERT")
-
-    get_users_query = f""" SELECT * from users where first_name = '{first_name}' AND last_name = '{last_name}' AND phone_number = '{phone_number}'"""
-
-    cursor.execute(get_users_query)
-    result_users = cursor.fetchall()
-
-    if result_users:#maybe check for change in the current_dosage if needed?
-        update_query = f"""UPDATE users SET current_dosage = {currect_dosage} where first_name = '{first_name}' AND last_name = '{last_name}' AND phone_number = '{phone_number}'"""
-        cursor.execute(update_query)
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return json.dumps({'result': "User already exists"})
-    '''
     
     # Define a record to insert
-    crypted_mac = hashlib.sha256(str.encode()).hexdigest()
+    mac = str(mac)
+    crypted_mac = hashlib.sha256(mac.encode()).hexdigest()
     record = (first_name, last_name, phone_number, currect_dosage, crypted_mac)
 
     # Check if any rows were returned
@@ -143,16 +125,15 @@ def Input_Information():
     #NEED to process the vibrations
     #for this code is saved in sum_vibrations
 
-    # Check if any rows were returned
-
     # datetime object containing current date and time
     now = datetime.now()
     conn = get_db_connection()
     cursor = conn.cursor()
-
+    mac = str(mac)
+    crypted_mac = hashlib.sha256(mac.encode()).hexdigest()
     dt_string = now.strftime("%Y/%m/%d %H:%M")
-    record = (id, sum_vibrations, dt_string)
-    sql = f"""INSERT INTO vibrations (id, sum_vibrations, dt_string) VALUES (%s, %s, %s)"""
+    record = (crypted_mac, sum_vibrations, dt_string)
+    sql = f"""INSERT INTO vibrations (id, dosage_id, current_date) VALUES (%s, %s, %s)"""
 
     cursor.execute(sql, record)
 
@@ -167,32 +148,50 @@ def Input_Information():
 def Delete_Information():
 #use with body requests body
     dic = json.loads(request.data)
-    time_to_delete = dic["time_to_delete"]
+    time_to_delete = dic["time_to_delete"]#in days
     id = dic["id"]
-    
-    sql = "DELETE FROM table_name WHERE condition"
-    return
+    time_to_delete = int(time_to_delete)
+    cutoff_date = datetime.now() - timedelta(days=time_to_delete)
 
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    get_crypted_mac = f""" SELECT crypted_mac from users where id = '{id}' """
+    cursor.execute(get_crypted_mac)
+    result_mac = cursor.fetchall()
 
-#if the function is from the server it shouldnt be in this format, its not an endpoint
-@app.route('/alert', methods = ['GET'])#from server to application
-def Get_Alert():#not sure if needed maybe in the PUT method we will send an http request to the application of the fall
+    query = f"DELETE FROM vibrations WHERE current_time < '{cutoff_date.strftime('%Y/%m/%d %H:%M')} AND id = {result_mac}';"
+    cursor.execute(query)
 
-    return
+    cursor.close()
+    conn.close()
+    return json.dumps({'result': 'All information that is older than {} days was deleted successfuly.'.format(time_to_delete)})
 
 
 @app.route('/alert', methods = ['PUT'])#from bracelet to server
 def Input_Alert():
+    dic = json.loads(request.data)
+    mac = str(dic["mac"])
+    crypted_mac = hashlib.sha256(mac.encode()).hexdigest()
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    user_quary = f"SELECT id, phone_number FROM users where crypted_mac = {crypted_mac}"#Get the user
+    cursor.execute(user_quary)
+    user_row = cursor.fetchall()
+    if user_row is not None:
+        id = user_row[0]
+        phone_number = user_row[1]
+        user_and_contacts_query = f"SELECT id, phone_number FROM users RIGHT JOIN contacts ON users.id = contacts.id WHERE id = {id}"
+        cursor.execute(user_and_contacts_query)#the table
+        user_and_contacts_table = cursor.fetchall()
+        #need to check how to access or how to send the table to GAL so she can notify these people
+
+
+    cursor.close()
+    conn.close()
 
     return
-
-#@app.route('/bracelet', methods = ['HEAD'])
-#def Check_Bracelet():
-#    return
-
-#@app.route('/application', methods = ['HEAD'])
-#def Check_App():
-#    return
 
 
 if __name__ == "__main__":
@@ -204,3 +203,30 @@ if __name__ == "__main__":
 #to get it out: request.args.to_dict()
 #body = dictionary that come seperated (assuming it is json type)
 #to get it out: dic = json.loads(request.data)
+
+    '''
+    SQL EXAMPLES:
+    get_users_query = f""" SELECT * from users where first_name = '{first_name}' """
+
+    cursor.execute(get_users_query)
+    result_users = cursor.fetchall()
+
+    if result_users:
+        print("User Exists, UPDATE")
+    
+    else:
+        print("User does not exist, INSERT")
+
+    get_users_query = f""" SELECT * from users where first_name = '{first_name}' AND last_name = '{last_name}' AND phone_number = '{phone_number}'"""
+
+    cursor.execute(get_users_query)
+    result_users = cursor.fetchall()
+
+    if result_users:#maybe check for change in the current_dosage if needed?
+        update_query = f"""UPDATE users SET current_dosage = {currect_dosage} where first_name = '{first_name}' AND last_name = '{last_name}' AND phone_number = '{phone_number}'"""
+        cursor.execute(update_query)
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return json.dumps({'result': "User already exists"})
+    '''
