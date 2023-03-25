@@ -126,7 +126,7 @@ def Get_Contacts():
     conn = get_db_connection()
     cursor = conn.cursor()
     # Check if any rows were returned
-    contacts_query = f"""SELECT phone_number, email, first_name, last_name FROM contacts WHERE id = '{id}'"""
+    contacts_query = f"""SELECT first_name, last_name, phone_number, email FROM contacts WHERE id = '{id}'"""
 
     cursor.execute(contacts_query)
     contacts_table = cursor.fetchall()
@@ -169,12 +169,12 @@ def Input_Information():
     conn.commit()
     cursor.close()
     conn.close()
-
-    return
+#check for error?
+    return json.dumps({'result': 'information was saved successfuly.'})
 
 @app.route('/information', methods = ['DELETE'])#from application to server
 def Delete_Information():
-#use with body requests body
+    
     dic = json.loads(request.data)
     time_to_delete = dic["time_to_delete"]#in days
     id = dic["id"]
