@@ -7,8 +7,6 @@ import StableFunctions
 
 app = Flask(__name__)
 
-
-
 # Configure the remote MySQL server connection
 config = {
     'user': 'uxbfzkjfzlxiefpm',
@@ -30,7 +28,7 @@ def route_test():
 
 #matan - did you mean from app to server? 
 #app need to get info of the vibrations not the other way around
-@app.route('/information', methods = ['GET'])#from server to application with dynamic input of days
+@app.route('/information', methods = ['GET'])#from server to applicatio
 def Get_Information():
     dic = json.loads(request.data)
     id = dic['id']
@@ -156,7 +154,6 @@ def Input_Information():
     #NEED to process the vibrations
     #for this code is saved in sum_vibrations
 
-    # datetime object containing current date and time
     now = datetime.now()
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -226,11 +223,85 @@ def Input_Alert():
 
     return json.dumps({'result': 'Message about a fall was sent to all your contacts'})
 
+@app.route('/check_connection', methods = ['POST'])#Check connection between bracelet to server MAYBE PUT?
+def Check_Connection():
+    dic = json.loads(request.data)
+    mac = str(dic["mac"])
+    new_status = dic["status"]
+    crypted_mac = hashlib.sha256(mac.encode()).hexdigest()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    '''
+    sql_query = f"UPDATE users SET status = {status} WHERE crypted_mac = '{crypted_mac}'"
+    cursor.execute(sql_query)
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+    if mac is None or status is None:
+        return 400
+    return 200
+    '''
+    cursor.execute(f"SELECT status FROM users WHERE crypted_mac = '{crypted_mac}'")
+    current_status = cursor.fetchall()[0][0]
+
+    if current_status != new_status:
+        cursor.execute(f"UPDATE users SET status = {new_status} WHERE crypted_mac = '{crypted_mac}'")
+        conn.commit()
+
+        #if new_status is None:
+        #NEED to check how to send notification to the app about status = 0
+        ans = f"Status for MAC {mac} updated to {new_status}"
+    else:
+        ans = f"Status for MAC {mac} is already {current_status}"
+    cursor.close()
+    conn.close()
+    return ans
+
+@app.route('/check_connection', methods = ['GET'])#status cases: 0- something wrong  1-works good  2-wrong and notified
+def Check_Connection_App():
+    dic = json.loads(request.data)
+    id = dic["id"]
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(f"SELECT status FROM users WHERE id = {id}")
+    current_status = cursor.fetchall()[0][0]
+
+    if current_status is None:
+        cursor.execute(f"UPDATE users SET status = {2} WHERE  id = {id}")
+        conn.commit()
+    
+    cursor.close()
+    conn.close()
+    return current_status
+
+@app.route('/dosage', methods = ['POST'])#updating the current_dosage of a user. from application to server
+def Update_Dosage():
+    dic = json.loads(request.data)
+    new_dosage = dic["dosage"]
+    id = dic["id"]
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(f"SELECT current_dosage FROM users WHERE id = {id}")
+    current_dosage = cursor.fetchall()[0][0]
+    if new_dosage != current_dosage:
+        cursor.execute(f"UPDATE users SET current_dosage = {new_dosage} WHERE id = {id}")
+        answer = 1
+    else:
+        answer = 0
+    cursor.close()
+    conn.close()
+
+    return answer#1 if there was a change 0 if the new dosage matched the old one
+        
+
 
 if __name__ == "__main__":
-    #app.run(host="bso1emke9kuwl56sroz2-mysql.services.clever-cloud.com",port=3306)
     app.run(host = "0.0.0.0", debug=True, port= 3306)
-    #TODO add a call to braclet, get method, no parameters, endpoint "check_connection", to get mpu6050 connection
 
 
 #query = comes with the url and is written at the end of the url
