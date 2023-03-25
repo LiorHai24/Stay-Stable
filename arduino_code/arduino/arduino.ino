@@ -14,6 +14,7 @@
 String ids = WiFi.macAddress();
 const char* id = ids.c_str();
 
+
  const int MPU_addr = 0x68; // I2C address of the MPU-6050
  int16_t AcX, AcY, AcZ, Tmp, GyX, GyY, GyZ;
  float ax = 0, ay = 0, az = 0, gx = 0, gy = 0, gz = 0;
@@ -73,9 +74,11 @@ String convertMoves(){
 Adafruit_MPU6050 mpu;
 // Set web server port number to 80
 WiFiServer server(80);
-unsigned long lastTime = 0;
+unsigned long lastTimeTimer = 0;
+unsigned long lastTimeCheck = 0;
 // Set timer to 1 minute (60000)
 unsigned long timerDelay = 2000;
+unsigned long checkDelay = 1000;
 void mpu_read();
 void setupMpu();
 void checkSettings();
@@ -225,6 +228,107 @@ bool checkStatus(){
     return false;
   return true;
 }
+
+void sendFallRequest(bool check){
+  WiFiClient client;
+  HTTPClient http;
+  String serverPath = "http://10.100.102.2:3306/alert";
+  // Your Domain name with URL path or IP address with path
+  http.begin(client, serverPath.c_str());
+
+  // If you need Node-RED/server authentication, insert user and password below
+  //http.setAuthorization("REPLACE_WITH_SERVER_USERNAME", "REPLACE_WITH_SERVER_PASSWORD");
+
+  String payload = "{}"; 
+  
+  http.addHeader("Content-Type", "application/json");
+  char  buffer[20];
+  sprintf(buffer, "{\"mac\":%s", id);
+  String httpRequestData = buffer;
+  // Send HTTP POST request
+  int httpResponseCode = http.PUT(httpRequestData);
+  if (httpResponseCode>0) {
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+    payload = http.getString();
+  }
+  else {
+    Serial.print("Error code: ");
+    Serial.println(httpResponseCode);
+    return;
+  }
+  Serial.println(payload);
+  JSONVar myObject = JSON.parse(payload);
+  
+  // JSON.typeof(jsonVar) can be used to get the type of the var
+  if (JSON.typeof(myObject) == "undefined") {
+    return;
+  }
+    
+  Serial.print("JSON object = ");
+  Serial.println(myObject);
+    
+  // myObject.keys() can be used to get an array of all the keys in the object
+  JSONVar keys = myObject.keys();
+  JSONVar errorMsg = myObject[keys[0]];
+  JSONVar result = myObject[keys[1]];
+  Serial.print("error message = ");
+  Serial.println(errorMsg);
+  Serial.print("result = ");
+  Serial.println(int(result));
+  
+}
+
+void sendFallRequest(bool check){
+  WiFiClient client;
+  HTTPClient http;
+  String serverPath = "http://10.100.102.2:3306/alert";
+  // Your Domain name with URL path or IP address with path
+  http.begin(client, serverPath.c_str());
+
+  // If you need Node-RED/server authentication, insert user and password below
+  //http.setAuthorization("REPLACE_WITH_SERVER_USERNAME", "REPLACE_WITH_SERVER_PASSWORD");
+
+  String payload = "{}"; 
+  
+  http.addHeader("Content-Type", "application/json");
+  char  buffer[20];
+  sprintf(buffer, "{\"mac\":%s", id);
+  String httpRequestData = buffer;
+  // Send HTTP POST request
+  int httpResponseCode = http.PUT(httpRequestData);
+  if (httpResponseCode>0) {
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+    payload = http.getString();
+  }
+  else {
+    Serial.print("Error code: ");
+    Serial.println(httpResponseCode);
+    return;
+  }
+  Serial.println(payload);
+  JSONVar myObject = JSON.parse(payload);
+  
+  // JSON.typeof(jsonVar) can be used to get the type of the var
+  if (JSON.typeof(myObject) == "undefined") {
+    return;
+  }
+    
+  Serial.print("JSON object = ");
+  Serial.println(myObject);
+    
+  // myObject.keys() can be used to get an array of all the keys in the object
+  JSONVar keys = myObject.keys();
+  JSONVar errorMsg = myObject[keys[0]];
+  JSONVar result = myObject[keys[1]];
+  Serial.print("error message = ");
+  Serial.println(errorMsg);
+  Serial.print("result = ");
+  Serial.println(int(result));
+  
+}
+
 
 void sendFallRequest(){
   WiFiClient client;
@@ -422,12 +526,6 @@ void sendResponse(){
               if (header.indexOf("GET /MAC") >= 0) {
                 client.println(id);
               }
-              else if (header.indexOf("GET /check_connection") >= 0) {
-                bool check = checkStatus();
-                Serial.println("here");
-                client.println(id);
-                client.println(check);
-              }
               client.stop();
               Serial.println("Client disconnected.");
               Serial.println("");
@@ -475,17 +573,26 @@ void mpu_read() {
 }
 
 void loop() {
+  bool check = checkStatus();
+  
   bool sent = false;
   sendResponse();
-  receiveMovement();
-  delay(100);
-  Serial.println();
-  if ((millis() - lastTime) > timerDelay) {
-    sent = sendShakingsData();
-    if(sent){
-      moves->clear();   
-      lastTime = millis();      
-    }
+  bool check = checkStatus();
+  if ((millis() - lastTimeCheck) > checkDelay) {
+    sendCheckStatus();
+    lastTimeCheck = millis();
+  }
+  if(check){
+    receiveMovement();
+    delay(100);
+    Serial.println();
+    if ((millis() - lastTimeTimer) > timerDelay) {
+      sent = sendShakingsData();
+      if(sent){
+        moves->clear();   
+        lastTimeTimer = millis();      
+      }
+    }    
   }
 }
 
