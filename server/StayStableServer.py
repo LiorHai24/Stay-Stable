@@ -28,6 +28,8 @@ def route_test():
     return response
 
 
+#matan - did you mean from app to server? 
+#app need to get info of the vibrations not the other way around
 @app.route('/information', methods = ['GET'])#from server to application with dynamic input of days
 def Get_Information():
     dic = json.loads(request.data)
@@ -147,6 +149,7 @@ def Get_Contacts():
 @app.route('/information', methods = ['PUT'])#from bracelet to server
 def Input_Information():
     dic = json.loads(request.data)
+    print(dic)
     vibrations = dic["vibrations"]
     mac = dic["mac"]
     #
@@ -227,6 +230,7 @@ def Input_Alert():
 if __name__ == "__main__":
     #app.run(host="bso1emke9kuwl56sroz2-mysql.services.clever-cloud.com",port=3306)
     app.run(host = "0.0.0.0", debug=True, port= 3306)
+    #TODO add a call to braclet, get method, no parameters, endpoint "check_connection", to get mpu6050 connection
 
 
 #query = comes with the url and is written at the end of the url

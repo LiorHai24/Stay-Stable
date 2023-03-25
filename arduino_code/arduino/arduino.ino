@@ -81,6 +81,7 @@ void setupMpu();
 void checkSettings();
 bool sendShakingsData();
 int analyzeData();
+void sendMpuStatus();
 
 
 void setupMpu(){
@@ -90,7 +91,7 @@ void setupMpu(){
   Serial.println("Adafruit MPU6050 test!");
 
   // Try to initialize!
-  if (!mpu.begin()) {
+  if (!mpu.begin()) { 
     Serial.println("Failed to find MPU6050 chip");
     while (1) {
       delay(10);
@@ -186,6 +187,45 @@ void setup() {
   Serial.println("starting.....");
 }
 
+bool checkStatus(){
+  byte error, address;
+  int nDevices;
+ 
+  Serial.println("Scanning...");
+ 
+  nDevices = 0;
+  for(address = 1; address < 127; address++ )
+  {
+    // The i2c_scanner uses the return value of
+    // the Write.endTransmisstion to see if
+    // a device did acknowledge to the address.
+    Wire.beginTransmission(address);
+    error = Wire.endTransmission();
+ 
+    if (error == 0)
+    {
+      Serial.print("I2C device found at address 0x");
+      if (address<16)
+        Serial.print("0");
+      Serial.print(address,HEX);
+      Serial.println("  !");
+ 
+      nDevices++;
+    }
+    else if (error==4)
+    {
+      Serial.print("Unknown error at address 0x");
+      if (address<16)
+        Serial.print("0");
+      Serial.println(address,HEX);
+      nDevices--;
+    }    
+  }
+  if (nDevices <= 0)
+    return false;
+  return true;
+}
+
 void sendFallRequest(){
   WiFiClient client;
   HTTPClient http;
@@ -200,7 +240,6 @@ void sendFallRequest(){
   
   http.addHeader("Content-Type", "application/json");
   char  buffer[1000];
-  Serial.println(id);
   sprintf(buffer, "{\"mac\":%s", id);
   String httpRequestData = buffer;
   // Send HTTP POST request
@@ -243,17 +282,14 @@ bool sendShakingsData(){
   String serverPath = "http://10.100.102.2:3306/information";
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
-
   // If you need Node-RED/server authentication, insert user and password below
   //http.setAuthorization("REPLACE_WITH_SERVER_USERNAME", "REPLACE_WITH_SERVER_PASSWORD");
-
   String payload = "{}"; 
   
   http.addHeader("Content-Type", "application/json");
   
   char  buffer[10000];
   String s = convertMoves();
-  Serial.println(s);
   sprintf(buffer, "{\"mac\":\"%s\", \"vibrations\":%s}", id, s.c_str());
   String httpRequestData = buffer;
   http.addHeader("Content-Length", String(httpRequestData.length()));
@@ -286,8 +322,6 @@ bool sendShakingsData(){
   JSONVar result = myObject[keys[1]];
   Serial.print("error message = ");
   Serial.println(errorMsg);
-  Serial.print("result = ");
-  Serial.println(int(result));
   return true;
 }
 
@@ -362,7 +396,7 @@ void checkFalling(){
 
 }
 
-void sendMacAddress(){
+void sendResponse(){
   String header;
   WiFiClient client = server.available(); // Listen for incoming clients
   header = "";
@@ -385,9 +419,14 @@ void sendMacAddress(){
               client.println("Content-type:text/html");
               client.println();
               
-              // turns the GPIOs on and off
               if (header.indexOf("GET /MAC") >= 0) {
                 client.println(id);
+              }
+              else if (header.indexOf("GET /check_connection") >= 0) {
+                bool check = checkStatus();
+                Serial.println("here");
+                client.println(id);
+                client.println(check);
               }
               client.stop();
               Serial.println("Client disconnected.");
@@ -408,6 +447,7 @@ void receiveMovement(){
     checkFalling();
     sensors_event_t a, g, temp;
     mpu.getEvent(&a, &g, &temp);
+    /*
     Serial.print("Acceleration X: ");
     Serial.print(a.acceleration.x);
     Serial.print(", Y: ");
@@ -415,26 +455,10 @@ void receiveMovement(){
     Serial.print(", Z: ");
     Serial.print(a.acceleration.z);
     Serial.println();
+    */
     Movement m(a.acceleration.x, a.acceleration.y, a.acceleration.z);
     moves->addMove(m);
-    Serial.println("result = " + convertMoves());
 }
-
-void loop() {
-  bool sent = false;
-  sendMacAddress();
-  receiveMovement();
-  delay(100);
-  Serial.println();
-  if ((millis() - lastTime) > timerDelay) {
-    sent = sendShakingsData();
-    if(sent){
-      moves->clear();   
-      lastTime = millis();      
-    }
-  }
-}
-
 
 void mpu_read() {
    Wire.beginTransmission(MPU_addr);
@@ -449,3 +473,19 @@ void mpu_read() {
    GyY = Wire.read() << 8 | Wire.read(); // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
    GyZ = Wire.read() << 8 | Wire.read(); // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
 }
+
+void loop() {
+  bool sent = false;
+  sendResponse();
+  receiveMovement();
+  delay(100);
+  Serial.println();
+  if ((millis() - lastTime) > timerDelay) {
+    sent = sendShakingsData();
+    if(sent){
+      moves->clear();   
+      lastTime = millis();      
+    }
+  }
+}
+
