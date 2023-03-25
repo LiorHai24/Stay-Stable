@@ -229,10 +229,10 @@ bool checkStatus(){
   return true;
 }
 
-void sendFallRequest(bool check){
+void sendCheckStatus(bool check){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://10.100.102.2:3306/alert";
+  String serverPath = "http://10.100.102.2:3306/check_connection";
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
 
@@ -243,7 +243,7 @@ void sendFallRequest(bool check){
   
   http.addHeader("Content-Type", "application/json");
   char  buffer[20];
-  sprintf(buffer, "{\"mac\":%s", id);
+  sprintf(buffer, "{\"mac\":%s, \"status\"", id, int(check));
   String httpRequestData = buffer;
   // Send HTTP POST request
   int httpResponseCode = http.PUT(httpRequestData);
@@ -573,13 +573,11 @@ void mpu_read() {
 }
 
 void loop() {
-  bool check = checkStatus();
-  
   bool sent = false;
   sendResponse();
   bool check = checkStatus();
   if ((millis() - lastTimeCheck) > checkDelay) {
-    sendCheckStatus();
+    sendCheckStatus(check);
     lastTimeCheck = millis();
   }
   if(check){
