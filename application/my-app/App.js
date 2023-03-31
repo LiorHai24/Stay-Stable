@@ -47,7 +47,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import moment from 'moment';
 import {useState} from 'react';
 import SettingsList from 'react-native-settings-list';
-import { useRoute } from "@react-navigation/native"
+
 
 function FrontHomeScreen({ navigation }) {
   return (
@@ -259,65 +259,6 @@ function RecommendationsForDosageScreen({ navigation }) {
     </View>
   );
 }
-/*
-function SettingsAndProfileScreen({ navigation }) {
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [emergencyContact, setEmergencyContact] = useState('');
-
-  const saveProfileDetails = () => {
-    // implement logic to save profile details
-  }
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Profile Settings</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Name"
-        value={name}
-        onChangeText={(text) => setName(text)}
-        returnKeyType="done"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Age"
-        keyboardType="numeric"
-        value={age}
-        onChangeText={(text) => setAge(text)}
-        returnKeyType="done"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={(text) => setEmail(text)}
-        returnKeyType="done"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Change Password"
-        secureTextEntry={true}
-        value={password}
-        onChangeText={(text) => setPassword(text)}
-        returnKeyType="done"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Emergency Contact"
-        value={emergencyContact}
-        onChangeText={(text) => setEmergencyContact(text)}
-        returnKeyType="done"
-      />
-      <TouchableOpacity style={styles.button} onPress={saveProfileDetails}>
-        <Text style={styles.buttonText}>Save Changes</Text>
-      </TouchableOpacity>
-    </View>
-  );
-  
-}*/
 
 function AllPrevDosesScreen({navigation}){
   return (
