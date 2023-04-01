@@ -83,9 +83,7 @@ void mpu_read();
 void setupMpu();
 void checkSettings();
 bool sendShakingsData();
-int analyzeData();
 void sendMpuStatus();
-
 
 void setupMpu(){
   while (!Serial)
@@ -165,10 +163,6 @@ void setupMpu(){
   delay(100);  
 }
 
-int analyzeData(){
-  return 0;
-}
-
 void setup() {
   Serial.begin(115200);
   
@@ -232,7 +226,7 @@ bool checkStatus(){
 void sendCheckStatus(bool check){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://10.100.102.2:3306/check_connection";
+  String serverPath = "http://ec2-13-50-232-101.eu-north-1.compute.amazonaws.com:80/check_connection";
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
 
@@ -243,10 +237,10 @@ void sendCheckStatus(bool check){
   
   http.addHeader("Content-Type", "application/json");
   char  buffer[20];
-  sprintf(buffer, "{\"mac\":%s, \"status\":%d", id, int(check));
+  sprintf(buffer, "{\"mac\":%s, \"status\":%d}", "1234", int(check));
   String httpRequestData = buffer;
   // Send HTTP POST request
-  int httpResponseCode = http.PUT(httpRequestData);
+  int httpResponseCode = http.POST(httpRequestData);
   if (httpResponseCode>0) {
     Serial.print("HTTP Response code: ");
     Serial.println(httpResponseCode);
@@ -278,62 +272,11 @@ void sendCheckStatus(bool check){
   Serial.println(int(result));
   
 }
-
-void sendFallRequest(bool check){
-  WiFiClient client;
-  HTTPClient http;
-  String serverPath = "http://10.100.102.2:3306/alert";
-  // Your Domain name with URL path or IP address with path
-  http.begin(client, serverPath.c_str());
-
-  // If you need Node-RED/server authentication, insert user and password below
-  //http.setAuthorization("REPLACE_WITH_SERVER_USERNAME", "REPLACE_WITH_SERVER_PASSWORD");
-
-  String payload = "{}"; 
-  
-  http.addHeader("Content-Type", "application/json");
-  char  buffer[20];
-  sprintf(buffer, "{\"mac\":%s", id);
-  String httpRequestData = buffer;
-  // Send HTTP POST request
-  int httpResponseCode = http.PUT(httpRequestData);
-  if (httpResponseCode>0) {
-    Serial.print("HTTP Response code: ");
-    Serial.println(httpResponseCode);
-    payload = http.getString();
-  }
-  else {
-    Serial.print("Error code: ");
-    Serial.println(httpResponseCode);
-    return;
-  }
-  Serial.println(payload);
-  JSONVar myObject = JSON.parse(payload);
-  
-  // JSON.typeof(jsonVar) can be used to get the type of the var
-  if (JSON.typeof(myObject) == "undefined") {
-    return;
-  }
-    
-  Serial.print("JSON object = ");
-  Serial.println(myObject);
-    
-  // myObject.keys() can be used to get an array of all the keys in the object
-  JSONVar keys = myObject.keys();
-  JSONVar errorMsg = myObject[keys[0]];
-  JSONVar result = myObject[keys[1]];
-  Serial.print("error message = ");
-  Serial.println(errorMsg);
-  Serial.print("result = ");
-  Serial.println(int(result));
-  
-}
-
 
 void sendFallRequest(){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://10.100.102.2:3306/alert";
+  String serverPath = "http://ec2-13-50-232-101.eu-north-1.compute.amazonaws.com:80/alert";
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
 
@@ -344,7 +287,7 @@ void sendFallRequest(){
   
   http.addHeader("Content-Type", "application/json");
   char  buffer[1000];
-  sprintf(buffer, "{\"mac\":%s", id);
+  sprintf(buffer, "{\"mac\":%s}", id);
   String httpRequestData = buffer;
   // Send HTTP POST request
   int httpResponseCode = http.PUT(httpRequestData);
@@ -383,7 +326,7 @@ void sendFallRequest(){
 bool sendShakingsData(){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://10.100.102.2:3306/information";
+  String serverPath = "http://ec2-13-50-232-101.eu-north-1.compute.amazonaws.com:80/information";
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
   // If you need Node-RED/server authentication, insert user and password below
@@ -580,6 +523,7 @@ void loop() {
     sendCheckStatus(check);
     lastTimeCheck = millis();
   }
+
   if(check){
     receiveMovement();
     delay(100);
