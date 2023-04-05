@@ -47,6 +47,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import moment from 'moment';
 import {useState} from 'react';
 import SettingsList from 'react-native-settings-list';
+import { createStackNavigator } from '@react-navigation/stack'
 
 //GET method:
 //makes a GET request to the server using axios
@@ -440,6 +441,16 @@ function SettingsAndProfileScreen({ navigation }) {
 function LogInAppScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+ 
+
+  const handleLogin = () => {
+    if (email === 'user@example.com' && password === 'password') {
+      //setIsLoggedIn(true);
+      navigation.navigate(Home, { email, password });
+    } else {
+      Alert.alert('Invalid credentials', 'Please try again');
+    }
+  };
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
       <Image
@@ -457,7 +468,7 @@ function LogInAppScreen({ navigation }) {
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
-        returnKeyType="done"
+      
       />
       <TextInput
         style={styles.logInInput}
@@ -476,8 +487,8 @@ function LogInAppScreen({ navigation }) {
       />
       <View style={styles.buttonContainer}>
                 <TouchableOpacity
-                    //onPress= {signInWithEmailAndPassword}
-                    onPress={()=>navigation.navigate('FrontHome')}
+                    onPress= {handleLogin}
+                    //onPress={()=>navigation.navigate('FrontHome')}
                     style={styles.button}>
                     <Text style = {styles.buttonText}>Login</Text>
                 </TouchableOpacity>
@@ -753,10 +764,11 @@ function SignUpScreen({ navigation }) {
 }
 
 
-
+/* this is all the screens in one place
 const Tab = createBottomTabNavigator();
 const SettingsStack = createNativeStackNavigator();
 const HomeStack = createNativeStackNavigator();
+
 
 export default function App() {
   return (
@@ -767,7 +779,7 @@ export default function App() {
             tabBarActiveTintColor: '#438C9D',
           }}
           >
-                  <Tab.Screen name="Home" options={{ tabBarActiveTintColor: '#438C9D' }}>
+          <Tab.Screen name="Home" options={{ tabBarActiveTintColor: '#438C9D' }}>
           {() => (
             <SettingsStack.Navigator>
               <SettingsStack.Screen name="FrontHome"component={FrontHomeScreen} options={{ headerShown: false }} />
@@ -814,6 +826,96 @@ export default function App() {
     </NavigationContainer>
   );
 }
+
+*/
+
+
+/*
+//THIS IS PRESENTING FIRST THE LOGIN
+//this is working without the bar!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//stack navigator for login, signup, forgot password
+const Stack = createNativeStackNavigator();
+const Auth =() =>{
+return (
+  <Stack.Navigator initialRouteName="LoginScreen">
+    <Stack.Screen name="LogInApp" component={LogInAppScreen} options={{headerShown: false}}/>
+    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }}/>
+    <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }}/>
+    <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }}/>
+  </Stack.Navigator>
+);
+};
+
+const App = () => {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="insideApp">
+        <Stack.Screen name="Auth" component={Auth} options={{ headerShown: false }} />
+        <Stack.Screen name="FrontHome" component={FrontHomeScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="NewDose" component={NewDoseScreen} options={{ headerShown: false }}/>
+        <Stack.Screen name="Recomendations" component={RecommendationsForDosageScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Settings" component={SettingsAndProfileScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="History" component={AllPrevDosesScreen} options={{ headerShown: false }} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+};
+
+export default App;
+*/
+
+
+
+
+
+//not working
+const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
+const Auth = () => {
+  return (
+    <Stack.Navigator initialRouteName="LogInApp">
+      <Stack.Screen name="LogInApp" component={LogInAppScreen} options={{headerShown: false}} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{headerShown: false}} />
+      <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{headerShown: false}} />
+      <Stack.Screen name="SignUp" component={SignUpScreen} options={{headerShown: false}} />
+    </Stack.Navigator>
+  );
+};
+
+const Home = () => {
+  return (
+    <Tab.Navigator>
+      <Tab.Screen name="Home" options={{ headerShown: false }}>
+          {() => (
+            <Stack.Navigator>
+              <Stack.Screen name="FrontHome"component={FrontHomeScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="NewDose" component={NewDoseScreen} options={{ headerShown: false }} />
+            </Stack.Navigator>
+          )}
+        </Tab.Screen>
+      <Tab.Screen name="Recomendations" component={RecommendationsForDosageScreen} options={{ headerShown: false }}/>
+      <Tab.Screen name="History" component={AllPrevDosesScreen} options={{ headerShown: false }}/>
+      <Tab.Screen name="Settings" component={SettingsAndProfileScreen} options={{ headerShown: false }}/>
+      
+    </Tab.Navigator>
+  );
+};
+
+const App = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator>
+          <Stack.Screen name="Auth" component={Auth} options={{ headerShown: false }} />
+          <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+};
+
+export default App;
 
 
 
