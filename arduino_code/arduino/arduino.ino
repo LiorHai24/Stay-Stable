@@ -243,7 +243,7 @@ void sendCheckStatus(bool check){
   
   http.addHeader("Content-Type", "application/json");
   char  buffer[20];
-  sprintf(buffer, "{\"mac\":%s, \"status\"", id, int(check));
+  sprintf(buffer, "{\"mac\":%s, \"status\":%d", id, int(check));
   String httpRequestData = buffer;
   // Send HTTP POST request
   int httpResponseCode = http.PUT(httpRequestData);
