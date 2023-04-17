@@ -47,7 +47,60 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import moment from 'moment';
 import {useState} from 'react';
 import SettingsList from 'react-native-settings-list';
+import { createStackNavigator } from '@react-navigation/stack'
+import {GiftedChat} from 'react-native-gifted-chat';
 
+// ************************************************************Home sceen*********************************************************
+//GET method:
+//makes a GET request to the server using axios
+/*
+function FrontHomeScreen({ navigation }) {
+  const [lastDose, setLastDose] = useState({date: '', time: '', dosage: ''});
+
+  useEffect(() => {
+    // Call GET request to the server to get the last dose
+    axios.get('http://server-url.com/api/lastdose')
+      .then(response => {
+        // Update the state with the last dose
+        setLastDose({
+          date: response.data.date,
+          time: response.data.time,
+          dosage: response.data.dosage
+        });
+      })
+      .catch(error => {
+        console.log(error);
+      });
+  }, []);
+
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
+      <Image
+        style={{
+          resizeMode: 'cover',
+          height: 200,
+          width: 500,
+        }}
+        source={require('./assets/HomePage.png')}
+      />
+      <Text style= {styles.BraceletStatus}>Bracelet Mode: (bracelet mode)</Text>
+      <Text style= {styles.homeText}>Your last dose was taken at:</Text>
+      <Text style= {styles.homeText}>Date: {lastDose.date}</Text>
+      <Text style= {styles.homeText}>Time: {lastDose.time}</Text>
+      <Text style= {styles.homeText}>Dosage: {lastDose.dosage}</Text>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          //onPress= {signInWithEmailAndPassword}
+          onPress={()=>navigation.navigate('NewDose')}
+          style={styles.button}>
+          <Text style = {styles.buttonText}>Enter new dose</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+*/
 
 function FrontHomeScreen({ navigation }) {
   return (
@@ -77,7 +130,7 @@ function FrontHomeScreen({ navigation }) {
   );
 }
 
-
+// ************************************************************New Dose sceen*********************************************************
 // POST method: 
 // http://server-url.com/api/dosage
 // http://server-url.com is the base URL of the server.
@@ -85,7 +138,7 @@ function FrontHomeScreen({ navigation }) {
 // NEED TO: import moment from 'moment'; // Import moment library for date/time formatting
 /*
 const createButtonAlert = () => {
-  const formattedDate = moment(date).format('YYYY-MM-DD');
+  const formattedDate = moment(date).format('DD-MM-YYYY');
   const formattedTime = moment(time).format('HH:mm:ss');
   const message = `Time: ${formattedTime}, Dosage: ${dosage}`;
   
@@ -249,7 +302,7 @@ const createButtonAlert = () => {
   );
 }
 
-
+// *********************************************************************************************************************
 function RecommendationsForDosageScreen({ navigation }) {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' , backgroundColor:'#F7F3E7'}}>
@@ -380,17 +433,53 @@ function SettingsAndProfileScreen({ navigation }) {
         color={'#438C9D'}
       />)}
       <TouchableOpacity style={styles.button} onPress={SaveChangesButtonAlert}>
-          <Text style={styles.buttonText}>Save changes</Text>
+          <Text style={styles.buttonText}>Continue</Text>
         </TouchableOpacity>
     </View>
   );
 }
 
 
+// ************************************************************Login sceen*********************************************************
+
+/*
+function LogInAppScreen({ navigation }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = () => {
+    const requestOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, password: password })
+    };
+    fetch('http://server-url.com/dosage', requestOptions)
+      .then(response => response.json())
+      .then(data => {
+        // handle response data here
+        console.log(data);
+        navigation.navigate(Home, { email, password });
+      })
+      .catch(error => console.error(error));
+  };
+
+  // rest of the  code
+}
+*/
 
 function LogInAppScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+ 
+
+  const handleLogin = () => {
+    if (email === 'user@example.com' && password === 'password') {
+      //setIsLoggedIn(true);
+      navigation.navigate(Home, { email, password });
+    } else {
+      Alert.alert('Invalid credentials', 'Please try again');
+    }
+  };
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
       <Image
@@ -408,7 +497,7 @@ function LogInAppScreen({ navigation }) {
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
-        returnKeyType="done"
+      
       />
       <TextInput
         style={styles.logInInput}
@@ -427,8 +516,8 @@ function LogInAppScreen({ navigation }) {
       />
       <View style={styles.buttonContainer}>
                 <TouchableOpacity
-                    //onPress= {signInWithEmailAndPassword}
-                    onPress={()=>navigation.navigate('FrontHome')}
+                    onPress= {handleLogin}
+                    //onPress={()=>navigation.navigate('FrontHome')}
                     style={styles.button}>
                     <Text style = {styles.buttonText}>Login</Text>
                 </TouchableOpacity>
@@ -444,6 +533,9 @@ function LogInAppScreen({ navigation }) {
     </View>
   );
 }
+
+// ************************************************************Forgot password sceen*********************************************************
+
 
 function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -472,7 +564,7 @@ function ForgotPasswordScreen({ navigation }) {
        <View style={styles.buttonContainer}>
                 <TouchableOpacity
                     //onPress= {signInWithEmailAndPassword}
-                    onPress={()=>navigation.navigate('LogInApp')}
+                    onPress={()=>navigation.navigate('ResetPassword')}
                     style={styles.button}>
                     <Text style = {styles.buttonText}>Submit</Text>
                 </TouchableOpacity>
@@ -482,6 +574,104 @@ function ForgotPasswordScreen({ navigation }) {
   );
 }
 
+// ************************************************************Reset Password sceen*********************************************************
+function ResetPasswordScreen({ navigation }) {
+  const [password, setPassword] = useState('');
+  const SaveChangesButtonAlert = () => {
+    const message = 'Changes saved!';
+    Alert.alert('Action completed', message, [
+      {
+        text: 'Edit',
+        onPress: () => console.log('Edit Pressed'),
+        style: 'Edit',
+      },
+      {
+        text: 'OK',
+        onPress: () => {
+          // Call SQL function to save data here
+          navigation.navigate('LogInApp');
+        },
+      },
+    ]);
+  };
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
+       <Image
+        style={{
+          resizeMode: 'cover',
+          height: 320,
+          width: 300,
+        }}
+        source={require('./assets/forgotPasswordImage.png')}
+      />
+      <Text style ={styles.title}>Reset Password</Text>
+ 
+      <TextInput
+        style={styles.logInInput}
+        placeholder="New password"
+        value={password}
+        onChangeText={setPassword}
+        returnKeyType="done"
+        secureTextEntry
+      />
+      <TextInput
+        style={styles.logInInput}
+        placeholder="Confirm new password"
+        value={password}
+        onChangeText={setPassword}
+        returnKeyType="done"
+        secureTextEntry
+      />
+       <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.button} onPress={SaveChangesButtonAlert}>
+          <Text style={styles.buttonText}>Save changes</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+
+  );
+}
+/*
+const SaveChangesButtonAlert = () => {
+  const message = 'Changes saved!';
+  Alert.alert('Action completed', message, [
+    {
+      text: 'Edit',
+      onPress: () => console.log('Edit Pressed'),
+      style: 'Edit',
+    },
+    {
+      text: 'OK',
+      onPress: async () => {
+        const requestBody = {
+          name,
+          age,
+          email,
+          password,
+          emergencyContacts,
+        };
+
+        const response = await fetch('http://server-url.com/api/signup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (response.ok) {
+          navigation.navigate('FrontHome');
+        } else {
+          // handle error case here
+        }
+      },
+    },
+  ]);
+};
+*/
+
+
+// ************************************************************Signup sceen************************************************
 function SignUpScreen({ navigation }) {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
@@ -510,8 +700,8 @@ function SignUpScreen({ navigation }) {
       {
         text: 'OK',
         onPress: () => {
-          // Call SQL function to save data here
-          navigation.navigate('FrontHome');
+          // Call SQL function to save data here??
+          navigation.navigate('LogInApp');
         },
       },
     ]);
@@ -529,12 +719,12 @@ function SignUpScreen({ navigation }) {
        <Image
         style={{
           resizeMode: 'contain',
-          height: 300,
-          width: 300,
+          height: 350,
+          width: 350,
         }}
         source={require('./assets/signup.png')}
       />
-      <Text style={styles.title}>SignUp</Text>
+      <Text style={[styles.title, { marginTop: -70 }]}>SignUp</Text>
       <TextInput
        style={styles.signUpInput}
         placeholder="Name"
@@ -603,7 +793,7 @@ function SignUpScreen({ navigation }) {
         color={'#438C9D'}
       />)}
       <TouchableOpacity style={styles.saveButton} onPress={SaveChangesButtonAlert}>
-          <Text style={styles.buttonText}>Save changes</Text>
+          <Text style={styles.buttonText}>Submit</Text>
         </TouchableOpacity>
         </ScrollView>
     </View>
@@ -611,66 +801,61 @@ function SignUpScreen({ navigation }) {
 }
 
 
+function Chat()
+{
+    return(
+        <GiftedChat/>
+    )
+}
 
+const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
-const SettingsStack = createNativeStackNavigator();
-const HomeStack = createNativeStackNavigator();
 
-export default function App() {
+const Auth = () => {
   return (
-    <NavigationContainer >
-      <Tab.Navigator  
-          screenOptions={{
-            headerShown: false,
-            tabBarActiveTintColor: '#438C9D',
-          }}
-          >
-                  <Tab.Screen name="Home" options={{ tabBarActiveTintColor: '#438C9D' }}>
-          {() => (
-            <SettingsStack.Navigator>
-              <SettingsStack.Screen name="FrontHome"component={FrontHomeScreen} options={{ headerShown: false }} />
-              <SettingsStack.Screen name="NewDose" component={NewDoseScreen} options={{ headerShown: false }} />
-            </SettingsStack.Navigator>
-          )}
-        </Tab.Screen>
+    <Stack.Navigator initialRouteName="LogInApp">
+      <Stack.Screen name="LogInApp" component={LogInAppScreen} options={{headerShown: false}} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{headerShown: false}} />
+      <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{headerShown: false}} />
+      <Stack.Screen name="SignUp" component={SignUpScreen} options={{headerShown: false}} />
+    </Stack.Navigator>
+  );
+};
 
-          <Tab.Screen name="Recomendations" options={{ tabBarActiveTintColor: '#438C9D' }}>
+const Home = () => {
+  return (
+    <Tab.Navigator>
+      <Tab.Screen name="Home" options={{ headerShown: false }}>
           {() => (
-            <SettingsStack.Navigator>
-              <SettingsStack.Screen name="RecommendationsForDosage"component={RecommendationsForDosageScreen} options={{ headerShown: false }} />
-              <SettingsStack.Screen name="NewDose" component={NewDoseScreen} options={{ headerShown: false }} />
-            </SettingsStack.Navigator>
+            <Stack.Navigator>
+              <Stack.Screen name="FrontHome"component={FrontHomeScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="NewDose" component={NewDoseScreen} options={{ headerShown: false }} />
+            </Stack.Navigator>
           )}
         </Tab.Screen>
-   
-        <Tab.Screen name="Settings"options={{ tabBarActiveTintColor: '#438C9D' }}>
-          {() => (
-            <HomeStack.Navigator>
-              <HomeStack.Screen name="SettingsAndProfile" component={SettingsAndProfileScreen} options={{ headerShown: false }}/>
-            </HomeStack.Navigator>
-          )}
-        </Tab.Screen>
-        <Tab.Screen name="History"options={{ tabBarActiveTintColor: '#438C9D' }}>
-          {() => (
-            <HomeStack.Navigator>
-              <HomeStack.Screen name="AllPrevDoses" component={AllPrevDosesScreen} options={{ headerShown: false }}/>
-            </HomeStack.Navigator>
-          )}
-        </Tab.Screen>
+      <Tab.Screen name="Recomendations" component={RecommendationsForDosageScreen} options={{ headerShown: false }}/>
+      <Tab.Screen name="History" component={AllPrevDosesScreen} options={{ headerShown: false }}/>
+      <Tab.Screen name="Chat" component={Chat} options={{ headerShown: false }}/>
+      
+      
+    </Tab.Navigator>
+  );
+};
 
-        <Tab.Screen name="Login"options={{ tabBarActiveTintColor: '#438C9D' }}>
-          {() => (
-            <HomeStack.Navigator>
-              <HomeStack.Screen name="LogInApp" component={LogInAppScreen} options={{ headerShown: false }}/>
-              <HomeStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }}/>
-              <HomeStack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }}/>
-            </HomeStack.Navigator>
-          )}
-        </Tab.Screen>
-      </Tab.Navigator>
+const App = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator>
+          <Stack.Screen name="Auth" component={Auth} options={{ headerShown: false }} />
+          <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
+      </Stack.Navigator>
     </NavigationContainer>
   );
-}
+};
+
+export default App;
 
 
 
