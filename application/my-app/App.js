@@ -1,42 +1,3 @@
-/*import React from "react";
-import { NavigationContainer } from "@react-navigation/native";
-import { createStackNavigator } from '@react-navigation/stack';
-//import Chat from "./screens/Chat";
-import Home from "./screens/Home";
-//import Login from "./screens/Login";
-const Stack = createStackNavigator();
-
-function ChatStack(){
-  return(
-    <Stack.Navigator>
-      <Stack.Screen name="Chat" component={Chat}/>
-    </Stack.Navigator>
-  )
-}*/
-/*
-function HomeScreen(){
- return (
-  <Stack.Navigator>
-  <Stack.Screen name="Home" component={Home}/>
-</Stack.Navigator>
-
-  )
-}
-
-function RootNavigator(){//more navigation to here      // add <ChatStack/>
-  return(
-    <NavigationContainer>
-      <HomeScreen/>
-    </NavigationContainer>
-  )
-}
-
-
-export default function App() {
-  return <RootNavigator/>
-}
-*/
-
 import * as React from 'react';
 import { Button, View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -49,7 +10,7 @@ import {useState} from 'react';
 import SettingsList from 'react-native-settings-list';
 import { createStackNavigator } from '@react-navigation/stack'
 import {GiftedChat} from 'react-native-gifted-chat';
-
+import { Ionicons } from '@expo/vector-icons'; 
 // ************************************************************Home sceen*********************************************************
 //GET method:
 //makes a GET request to the server using axios
@@ -103,6 +64,7 @@ function FrontHomeScreen({ navigation }) {
 */
 
 function FrontHomeScreen({ navigation }) {
+  console.log(global.user_id);
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
       <Image
@@ -136,6 +98,8 @@ function FrontHomeScreen({ navigation }) {
 // http://server-url.com is the base URL of the server.
 // /api/dosage  is the endpoint that we want to access on the server.
 // NEED TO: import moment from 'moment'; // Import moment library for date/time formatting
+
+
 /*
 const createButtonAlert = () => {
   const formattedDate = moment(date).format('DD-MM-YYYY');
@@ -150,7 +114,7 @@ const createButtonAlert = () => {
   };
   
   // send the POST request to the server
-  fetch('http://server-url.com/api/dosage', {
+  fetch(''http://172.20.10.5:3306/login'', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -205,24 +169,64 @@ const createButtonAlert = () => {
     setShowTimepicker(false);
     setTime(currentTime);
   };
+
   const createButtonAlert = () => {
-    const formattedDate = moment(date).format('YYYY-MM-DD');
-    const formattedTime = moment(time).format('HH:mm:ss');
+    const formattedDate = moment(date).format('DD-MM-YYYY');
+    const formattedTime = moment(time).format('HH:mm');
     const message = `Time: ${formattedTime}, Dosage: ${dosage}`;
-    Alert.alert('Action completed', message, [
-      {
-        text: 'Edit',
-        onPress: () => console.log('Edit Pressed'),
-        style: 'Edit',
+    
+    // construct the request payload
+    const payload = {
+      id: global.user_id,
+      date: formattedDate,
+      time: formattedTime,
+      dosage: dosage
+    };
+    
+    // send the POST request to the server
+    fetch('http://172.20.10.5:3306/dose', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
       },
+      body: JSON.stringify(payload)
+    })
+    .then(response => {
+      if (!response.ok) {
+        Alert.alert('There is a problem, please try again.', message, [
+          {
+            text: 'OK',
+            onPress: () => {
+              navigation.navigate('NewDose'); // nstay at this current screen
+            },
+          },
+        ]);
+        throw new Error('Network response was not ok');
+      }
+      else
       {
-        text: 'OK',
-        onPress: () => {
-          // Call SQL function to save data here
-          navigation.navigate('FrontHome');
-        },
-      },
-    ]);
+        Alert.alert('Action completed', message, [
+          {
+            text: 'Edit',
+            onPress: () => console.log('Edit Pressed'),
+            style: 'Edit',
+          },
+          {
+            text: 'OK',
+            onPress: () => {
+              navigation.navigate('FrontHome'); // navigate to FrontHome screen
+            },
+          },
+        ]);
+      }
+      // if response is ok, navigate to FrontHome screen
+      navigation.navigate('FrontHome');
+    })
+    .catch(error => {
+      console.error('There was a problem with the POST request:', error);
+    });
+    
+
   };
 
 
@@ -244,7 +248,7 @@ const createButtonAlert = () => {
           <Text style={styles.homeText}>Enter new dose:</Text>
           <TextInput
             style={styles.input}
-            placeholder="Dosage"
+            placeholder="Dosage in mg"
             keyboardType="numeric"
             returnKeyType="done"
             value={dosage}
@@ -270,7 +274,7 @@ const createButtonAlert = () => {
         </View>
         <View style={styles.formField}>
           <TouchableOpacity onPress={() => setShowTimepicker(true)}>
-            <Text style = {styles.homeText}>Time: {moment(time).format('hh:mm A')}</Text>
+            <Text style = {styles.homeText}>Time: {moment(time).format('HH:mm')}</Text>
           </TouchableOpacity>
           {showTimepicker && (
             <View style={{ justifyContent: 'center', alignItems: 'center' }}>
@@ -278,10 +282,9 @@ const createButtonAlert = () => {
               testID="timepicker"
               value={time}
               mode="time"
-              is24Hour={false}
+              is24Hour={true}
               display="default"
               onChange={handleTimepicker}
-
             />
            </View>
           )}
@@ -442,7 +445,7 @@ function SettingsAndProfileScreen({ navigation }) {
 
 // ************************************************************Login sceen*********************************************************
 
-/*
+
 function LogInAppScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -453,20 +456,76 @@ function LogInAppScreen({ navigation }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email, password: password })
     };
-    fetch('http://server-url.com/dosage', requestOptions)
+    fetch('http://172.20.10.5:3306/login', requestOptions)
       .then(response => response.json())
       .then(data => {
-        // handle response data here
+        if (data['answer'] === 1) {
+          global.user_id = data['user'][0]
+          navigation.navigate(Home, { email, password });
+        } else {
+          console.log("User does not exist");
+          alert('User does not exist');
+        }
         console.log(data);
-        navigation.navigate(Home, { email, password });
       })
       .catch(error => console.error(error));
   };
 
-  // rest of the  code
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
+      <Image
+        style={{
+          resizeMode: 'cover',
+          height: 200,
+          width: 350,
+        }}
+        source={require('./assets/backImage.png')}
+      />
+      <Text style ={styles.title}>Login</Text>
+       <TextInput
+      style={styles.logInInput}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+      
+      />
+      <TextInput
+        style={styles.logInInput}
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        returnKeyType="done"
+        secureTextEntry
+      />
+      <Button
+        title="Forgot Password?"
+        fontSize={10}
+        //onPress={handleForgotPassword}
+        color={'#438C9D'}
+        onPress={()=>navigation.navigate('ForgotPassword')}
+      />
+      <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                    onPress= {handleLogin}
+                    //onPress={()=>navigation.navigate('FrontHome')}
+                    style={styles.button}>
+                    <Text style = {styles.buttonText}>Login</Text>
+                </TouchableOpacity>
+      </View>
+      <Text style={styles.homeText}>New to Stayble?</Text>
+      <Button
+        title="SignUp"
+        fontSize={10}
+        onPress={()=>navigation.navigate('SignUp')}
+        color={'#438C9D'}
+        //underline= {textDecorationLine= 'underline'} - NOT WORKING!!!
+      />
+    </View>
+  );
 }
-*/
 
+/*
 function LogInAppScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -533,7 +592,7 @@ function LogInAppScreen({ navigation }) {
     </View>
   );
 }
-
+*/
 // ************************************************************Forgot password sceen*********************************************************
 
 
@@ -823,9 +882,17 @@ const Auth = () => {
 };
 
 const Home = () => {
-  return (
+  return ( 
     <Tab.Navigator>
-      <Tab.Screen name="Home" options={{ headerShown: false }}>
+        <Tab.Screen
+        name="Home"
+        options={{
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={30} color={'#438C9D'} />
+          ),
+        }}
+      >
           {() => (
             <Stack.Navigator>
               <Stack.Screen name="FrontHome"component={FrontHomeScreen} options={{ headerShown: false }} />
@@ -835,7 +902,6 @@ const Home = () => {
         </Tab.Screen>
       <Tab.Screen name="Recomendations" component={RecommendationsForDosageScreen} options={{ headerShown: false }}/>
       <Tab.Screen name="History" component={AllPrevDosesScreen} options={{ headerShown: false }}/>
-      <Tab.Screen name="Chat" component={Chat} options={{ headerShown: false }}/>
       
       
     </Tab.Navigator>
