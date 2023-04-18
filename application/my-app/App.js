@@ -34,7 +34,7 @@ function FrontHomeScreen({ navigation }) {
       });
   }, []);
 
-  return (
+ return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
       <Image
         style={{
@@ -45,16 +45,24 @@ function FrontHomeScreen({ navigation }) {
         source={require('./assets/HomePage.png')}
       />
       <Text style= {styles.BraceletStatus}>Bracelet Mode: (bracelet mode)</Text>
-      <Text style= {styles.homeText}>Your last dose was taken at:</Text>
-      <Text style= {styles.homeText}>Date: {lastDose.date}</Text>
-      <Text style= {styles.homeText}>Time: {lastDose.time}</Text>
-      <Text style= {styles.homeText}>Dosage: {lastDose.dosage}</Text>
+      <Text style= {styles.homeText}>
+        <Ionicons name="medkit-outline" size={24} color="black" />
+        (last dose in mg)
+      </Text>
+      <Text style= {styles.homeText}>
+        <Ionicons name="calendar-outline" size={24} color="black" />
+        (date shown)
+      </Text>
+      <Text style= {styles.homeText}>
+        <Ionicons name="time-outline" size={24} color="black" />
+       (time shown)
+      </Text>
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity
-          //onPress= {signInWithEmailAndPassword}
-          onPress={()=>navigation.navigate('NewDose')}
+          onPress={() => navigation.navigate('NewDose')}
           style={styles.button}>
-          <Text style = {styles.buttonText}>Enter new dose</Text>
+          <Text style={styles.buttonText}>Enter new dose</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -76,18 +84,26 @@ function FrontHomeScreen({ navigation }) {
         source={require('./assets/HomePage.png')}
       />
       <Text style= {styles.BraceletStatus}>Bracelet Mode: (bracelet mode)</Text>
-      <Text style= {styles.homeText}>Your last dose was taken at:</Text>
-      <Text style= {styles.homeText}>Date:(date shown)</Text>
-      <Text style= {styles.homeText}>Time:(time shown)</Text>
-      <Text style= {styles.homeText}>Dosage:(last dosage shown)</Text>
+      <Text style= {styles.homeText}>
+        <Ionicons name="medkit-outline" size={24} color="black" />
+        (last dose in mg)
+      </Text>
+      <Text style= {styles.homeText}>
+        <Ionicons name="calendar-outline" size={24} color="black" />
+        (date shown)
+      </Text>
+      <Text style= {styles.homeText}>
+        <Ionicons name="time-outline" size={24} color="black" />
+       (time shown)
+      </Text>
+
       <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                    //onPress= {signInWithEmailAndPassword}
-                    onPress={()=>navigation.navigate('NewDose')}
-                    style={styles.button}>
-                    <Text style = {styles.buttonText}>Enter new dose</Text>
-                </TouchableOpacity>
-           </View>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('NewDose')}
+          style={styles.button}>
+          <Text style={styles.buttonText}>Enter new dose</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -98,58 +114,6 @@ function FrontHomeScreen({ navigation }) {
 // http://server-url.com is the base URL of the server.
 // /api/dosage  is the endpoint that we want to access on the server.
 // NEED TO: import moment from 'moment'; // Import moment library for date/time formatting
-
-
-/*
-const createButtonAlert = () => {
-  const formattedDate = moment(date).format('DD-MM-YYYY');
-  const formattedTime = moment(time).format('HH:mm:ss');
-  const message = `Time: ${formattedTime}, Dosage: ${dosage}`;
-  
-  // construct the request payload
-  const payload = {
-    date: formattedDate,
-    time: formattedTime,
-    dosage: dosage
-  };
-  
-  // send the POST request to the server
-  fetch(''http://172.20.10.5:3306/login'', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    // if response is ok, navigate to FrontHome screen
-    navigation.navigate('FrontHome');
-  })
-  .catch(error => {
-    console.error('There was a problem with the POST request:', error);
-  });
-  
-  Alert.alert('Action completed', message, [
-    {
-      text: 'Edit',
-      onPress: () => console.log('Edit Pressed'),
-      style: 'Edit',
-    },
-    {
-      text: 'OK',
-      onPress: () => {
-        // navigate to FrontHome screen
-        navigation.navigate('FrontHome');
-      },
-    },
-  ]);
-};
-*/
-
-
 
  function NewDoseScreen({ navigation }) {
   const [dosage, setDosage] = useState('');
@@ -174,7 +138,7 @@ const createButtonAlert = () => {
     const formattedDate = moment(date).format('DD-MM-YYYY');
     const formattedTime = moment(time).format('HH:mm');
     const message = `Time: ${formattedTime}, Dosage: ${dosage}`;
-    
+    const empty_message ='';
     // construct the request payload
     const payload = {
       id: global.user_id,
@@ -193,7 +157,7 @@ const createButtonAlert = () => {
     })
     .then(response => {
       if (!response.ok) {
-        Alert.alert('There is a problem, please try again.', message, [
+        Alert.alert('There is a problem, please try again.', empty_message, [
           {
             text: 'OK',
             onPress: () => {
@@ -354,7 +318,7 @@ function SettingsAndProfileScreen({ navigation }) {
       {
         text: 'OK',
         onPress: () => {
-          // Call SQL function to save data here
+          // Call function to save data here
           navigation.navigate('FrontHome');
         },
       },
@@ -883,27 +847,47 @@ const Auth = () => {
 
 const Home = () => {
   return ( 
-    <Tab.Navigator>
-        <Tab.Screen
+    <Tab.Navigator
+      tabBarOptions={{
+        activeTintColor: '#438C9D',
+        inactiveTintColor: 'gray',
+      }}>
+      <Tab.Screen
         name="Home"
         options={{
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={30} color={'#438C9D'} />
+            <Ionicons name="home-outline" size={30} color={color} />
           ),
         }}
       >
-          {() => (
-            <Stack.Navigator>
-              <Stack.Screen name="FrontHome"component={FrontHomeScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="NewDose" component={NewDoseScreen} options={{ headerShown: false }} />
-            </Stack.Navigator>
-          )}
-        </Tab.Screen>
-      <Tab.Screen name="Recomendations" component={RecommendationsForDosageScreen} options={{ headerShown: false }}/>
-      <Tab.Screen name="History" component={AllPrevDosesScreen} options={{ headerShown: false }}/>
-      
-      
+        {() => (
+          <Stack.Navigator>
+            <Stack.Screen name="FrontHome" component={FrontHomeScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="NewDose" component={NewDoseScreen} options={{ headerShown: false }} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+      <Tab.Screen
+        name="Recommendations"
+        component={RecommendationsForDosageScreen}
+        options={{
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="bookmark-outline" size={30} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="History"
+        component={AllPrevDosesScreen}
+        options={{
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="time-outline" size={30} color={color} />
+          ),
+        }}
+      />
     </Tab.Navigator>
   );
 };
