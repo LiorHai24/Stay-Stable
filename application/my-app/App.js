@@ -11,6 +11,10 @@ import SettingsList from 'react-native-settings-list';
 import { createStackNavigator } from '@react-navigation/stack'
 import {GiftedChat} from 'react-native-gifted-chat';
 import { Ionicons } from '@expo/vector-icons'; 
+import Video from 'react-native-video';
+
+
+
 // ************************************************************Home sceen*********************************************************
 //GET method:
 //makes a GET request to the server using axios
@@ -72,7 +76,8 @@ function FrontHomeScreen({ navigation }) {
 */
 
 function FrontHomeScreen({ navigation }) {
-  console.log(global.user_id);
+  const [videoUrl, setVideoUrl] = useState('');
+
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
       <Image
@@ -103,7 +108,16 @@ function FrontHomeScreen({ navigation }) {
           style={styles.button}>
           <Text style={styles.buttonText}>Enter new dose</Text>
         </TouchableOpacity>
+        
+        <TouchableOpacity onPress={() => setVideoUrl(require("'./assets/symptoms.mp4'"))} style={styles.button}>
+          <Text style={styles.buttonText}>Info</Text>
+        </TouchableOpacity>
+        
       </View>
+
+      {videoUrl && (
+        <Video source={{ uri: videoUrl }} style={{ width: 300, height: 200 }} />
+      )}
     </View>
   );
 }
@@ -293,6 +307,7 @@ function AllPrevDosesScreen({navigation}){
 function SettingsAndProfileScreen({ navigation }) {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
+  const [madison_name, setMadison] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emergencyContacts, setEmergencyContacts] = useState(['', '', '']);
@@ -318,8 +333,8 @@ function SettingsAndProfileScreen({ navigation }) {
       {
         text: 'OK',
         onPress: () => {
-          // Call function to save data here
-          navigation.navigate('FrontHome');
+          // Call SQL function to save data here??
+          navigation.navigate('LogInApp');
         },
       },
     ]);
@@ -333,24 +348,44 @@ function SettingsAndProfileScreen({ navigation }) {
 
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
-      <Text style={styles.homeText}>Profile Details</Text>
+      <ScrollView>
+       <Image
+        style={{
+          resizeMode: 'contain',
+          height: 300,
+          width: 350,
+          marginTop: 30 
+        }}
+        source={require('./assets/profile.png')}
+      />
+      <Text style={[styles.title, { marginTop: -30 }]}>Profile</Text>
       <TextInput
-       style={styles.input}
+       style={styles.signUpInput}
         placeholder="Name"
         value={name}
         onChangeText={setName}
         returnKeyType="done"
+        alignItems={'center'}
+        justifyContent={'center'}
       />
       <TextInput
-      style={styles.input}
+      style={styles.signUpInput}
         placeholder="Age"
         value={age}
         onChangeText={setAge}
         keyboardType="numeric"
         returnKeyType="done"
       />
+            <TextInput
+      style={styles.signUpInput}
+        placeholder="Madison name"
+        value={madison_name}
+        onChangeText={setMadison}
+        keyboardType="email-address"
+        returnKeyType="done"
+      />
       <TextInput
-      style={styles.input}
+      style={styles.signUpInput}
         placeholder="Email"
         value={email}
         onChangeText={setEmail}
@@ -358,7 +393,7 @@ function SettingsAndProfileScreen({ navigation }) {
         returnKeyType="done"
       />
       <TextInput
-        style={styles.input}
+        style={styles.signUpInput}
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
@@ -369,7 +404,7 @@ function SettingsAndProfileScreen({ navigation }) {
       {emergencyContacts.map((contact, index) => (
         <View key={index}>
           <TextInput
-            style={styles.input}
+            style={styles.signUpInput}
             returnKeyType="done"
             placeholder={`Emergency Contact ${index + 1}`}
             value={contact}
@@ -399,17 +434,20 @@ function SettingsAndProfileScreen({ navigation }) {
         onPress={handleAddEmergencyContact}
         color={'#438C9D'}
       />)}
-      <TouchableOpacity style={styles.button} onPress={SaveChangesButtonAlert}>
-          <Text style={styles.buttonText}>Continue</Text>
+      <TouchableOpacity style={styles.saveButton} onPress={SaveChangesButtonAlert}>
+          <Text style={styles.buttonText}>Submit</Text>
         </TouchableOpacity>
+        </ScrollView>
     </View>
   );
 }
 
 
+
 // ************************************************************Login sceen*********************************************************
 
-
+//this is in http request
+/*
 function LogInAppScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -488,8 +526,9 @@ function LogInAppScreen({ navigation }) {
     </View>
   );
 }
+*/
+//this is working without the server
 
-/*
 function LogInAppScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -556,7 +595,7 @@ function LogInAppScreen({ navigation }) {
     </View>
   );
 }
-*/
+
 // ************************************************************Forgot password sceen*********************************************************
 
 
@@ -698,6 +737,7 @@ const SaveChangesButtonAlert = () => {
 function SignUpScreen({ navigation }) {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
+  const [madison_name, setMadison] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emergencyContacts, setEmergencyContacts] = useState(['', '', '']);
@@ -765,6 +805,14 @@ function SignUpScreen({ navigation }) {
         keyboardType="numeric"
         returnKeyType="done"
       />
+            <TextInput
+      style={styles.signUpInput}
+        placeholder="Madison name"
+        value={madison_name}
+        onChangeText={setMadison}
+        keyboardType="email-address"
+        returnKeyType="done"
+      />
       <TextInput
       style={styles.signUpInput}
         placeholder="Email"
@@ -824,12 +872,6 @@ function SignUpScreen({ navigation }) {
 }
 
 
-function Chat()
-{
-    return(
-        <GiftedChat/>
-    )
-}
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -869,6 +911,16 @@ const Home = () => {
         )}
       </Tab.Screen>
       <Tab.Screen
+        name="History"
+        component={AllPrevDosesScreen}
+        options={{
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="time-outline" size={30} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
         name="Recommendations"
         component={RecommendationsForDosageScreen}
         options={{
@@ -879,12 +931,12 @@ const Home = () => {
         }}
       />
       <Tab.Screen
-        name="History"
-        component={AllPrevDosesScreen}
+        name="Profile"
+        component={SettingsAndProfileScreen}
         options={{
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="time-outline" size={30} color={color} />
+            <Ionicons name="person-circle-outline" size={30} color={color} />
           ),
         }}
       />
@@ -1012,6 +1064,11 @@ saveButton: {
   borderRadius: 10,
   margin: 10,
   alignSelf: 'center',
+  width: 150, // set a fixed width
+  height: 50, // set a fixed height
+  marginTop:20,
+ alignItems: 'center',
+ textAlign: 'center',
 },
 inputData:{ 
   backgroundColor: 'white',
