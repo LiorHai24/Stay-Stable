@@ -597,7 +597,61 @@ function LogInAppScreen({ navigation }) {
 }
 
 // ************************************************************Forgot password sceen*********************************************************
+//in http
+/*
+function ForgotPasswordScreen({ navigation }) {
+  const [email, setEmail] = useState('');
 
+  const handleResetPassword = async () => {
+    try {
+      const response = await fetch('https://example.com/reset-password', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      console.log(data);
+      navigation.navigate('ResetPassword');
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
+       <Image
+        style={{
+          resizeMode: 'cover',
+          height: 320,
+          width: 300,
+        }}
+        source={require('./assets/ForgotPassword.png')}
+      />
+      <Text style ={styles.title}>Forgot Password?</Text>
+      <Text style= {styles.homeText}>Don't worry! it happens.</Text>
+      <Text style= {styles.homeText}>Please enter the email address associated with your account.{'\n'} </Text>
+ 
+      <TextInput
+        style={styles.logInInput}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        returnKeyType="done"
+      />
+       <View style={styles.buttonContainer}>
+         <TouchableOpacity onPress={handleResetPassword} style={styles.button}>
+           <Text style={styles.buttonText}>Submit</Text>
+         </TouchableOpacity>
+       </View>
+    </View>
+  );
+}
+
+*/
 
 function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -734,6 +788,39 @@ const SaveChangesButtonAlert = () => {
 
 
 // ************************************************************Signup sceen************************************************
+//in http request
+/*
+function SignUpScreen({ navigation }) {
+  const [name, setName] = useState('');
+  const [age, setAge] = useState('');
+  const [madison_name, setMadison] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [emergencyContacts, setEmergencyContacts] = useState(['', '', '']);
+
+  const handleSubmit = () => {
+    const data = {
+      name,
+      age,
+      madison_name,
+      email,
+      password,
+      emergency_contacts: emergencyContacts
+    };
+
+    axios.post('https://example.com/signup', data)
+      .then(response => {
+        console.log('Success:', response.data);
+        navigation.navigate('LogInApp');
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
+  };
+
+  // rest of the code...
+}
+*/
 function SignUpScreen({ navigation }) {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
