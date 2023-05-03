@@ -9,6 +9,14 @@
 #include <vector>
 #include <Arduino_JSON.h>
 #include <string.h>
+#include "AdafruitIO_WiFi.h"
+
+#define IO_USERNAME  "matanbakva"
+#define IO_KEY       "aio_OgzQ40DJCO3WVskhYoiwi1imzQMK"
+
+AdafruitIO_WiFi *io;
+
+AdafruitIO_Feed *feed;
 
 
 String ids = WiFi.macAddress();
@@ -174,6 +182,13 @@ void setup() {
 
   //setupMpu();
 
+  io = new AdafruitIO_WiFi(IO_USERNAME, IO_KEY, "", "");
+
+  io->connect();
+
+  feed = io->feed("stay stable");
+
+
   Wire.begin();
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x6B);  // PWR_MGMT_1 register
@@ -226,7 +241,7 @@ bool checkStatus(){
 void sendCheckStatus(bool check){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://ec2-13-50-232-101.eu-north-1.compute.amazonaws.com:80/check_connection";
+  String serverPath = "http://10.100.102.2:3306/check_connection";
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
 
@@ -276,7 +291,7 @@ void sendCheckStatus(bool check){
 void sendFallRequest(){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://ec2-13-50-232-101.eu-north-1.compute.amazonaws.com:80/alert";
+  String serverPath = "http://10.100.102.2:3306/alert";
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
 
@@ -326,7 +341,7 @@ void sendFallRequest(){
 bool sendShakingsData(){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://ec2-13-50-232-101.eu-north-1.compute.amazonaws.com:80/information";
+  String serverPath = "http://10.100.102.2:3306/information";
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
   // If you need Node-RED/server authentication, insert user and password below
@@ -515,7 +530,14 @@ void mpu_read() {
    GyZ = Wire.read() << 8 | Wire.read(); // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
 }
 
+bool start = true;
+
 void loop() {
+  io->run();
+  if(start){
+    feed->save(String(id)); 
+    start = false;  
+  }
   bool sent = false;
   sendResponse();
   bool check = checkStatus();
