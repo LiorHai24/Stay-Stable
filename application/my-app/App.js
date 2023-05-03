@@ -12,7 +12,9 @@ import { createStackNavigator } from '@react-navigation/stack'
 import {GiftedChat} from 'react-native-gifted-chat';
 import { Ionicons } from '@expo/vector-icons'; 
 import Video from 'react-native-video';
-
+        /*<TouchableOpacity onPress={() => setVideoUrl(require("'./assets/symptoms.mp4'"))} style={styles.button}>
+          <Text style={styles.buttonText}>Info</Text>
+        </TouchableOpacity>*/
 
 
 // ************************************************************Home sceen*********************************************************
@@ -109,9 +111,7 @@ function FrontHomeScreen({ navigation }) {
           <Text style={styles.buttonText}>Enter new dose</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity onPress={() => setVideoUrl(require("'./assets/symptoms.mp4'"))} style={styles.button}>
-          <Text style={styles.buttonText}>Info</Text>
-        </TouchableOpacity>
+
         
       </View>
 
@@ -452,12 +452,14 @@ function LogInAppScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  
   const handleLogin = () => {
     const requestOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email, password: password })
     };
+
     fetch('http://172.20.10.5:3306/login', requestOptions)
       .then(response => response.json())
       .then(data => {
@@ -788,7 +790,7 @@ const SaveChangesButtonAlert = () => {
 
 
 // ************************************************************Signup sceen************************************************
-//in http request
+//in http request POST
 /*
 function SignUpScreen({ navigation }) {
   const [name, setName] = useState('');
@@ -798,6 +800,16 @@ function SignUpScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [emergencyContacts, setEmergencyContacts] = useState(['', '', '']);
 
+     const payload = {
+      id: global.user_id,
+      name: name,
+      age: age,
+      madison_name: madison_name
+      email: email,
+      password: password,
+      /////emergencyContacts:emergencyContacts,
+    };
+
   const handleSubmit = () => {
     const data = {
       name,
@@ -805,7 +817,7 @@ function SignUpScreen({ navigation }) {
       madison_name,
       email,
       password,
-      emergency_contacts: emergencyContacts
+      /////emergency_contacts: emergencyContacts
     };
 
     axios.post('https://example.com/signup', data)
@@ -827,21 +839,15 @@ function SignUpScreen({ navigation }) {
   const [madison_name, setMadison] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [emergencyContacts, setEmergencyContacts] = useState(['', '', '']);
+
 
   const handleSubmit = () => {
     // TODO: implement form submission logic
   };
 
-  const handleAddEmergencyContact = () => {
-    if (emergencyContacts.length < 3) {
-      setEmergencyContacts([...emergencyContacts, '']);
-    }
-  };
-
-  const SaveChangesButtonAlert = () => {
-    const message = 'Changes saved!';
-    Alert.alert('Action completed', message, [
+  const NextButtonAlert = () => {
+    const message =" ";
+    Alert.alert('You are half way there!',message, [
       {
         text: 'Edit',
         onPress: () => console.log('Edit Pressed'),
@@ -851,17 +857,13 @@ function SignUpScreen({ navigation }) {
         text: 'OK',
         onPress: () => {
           // Call SQL function to save data here??
-          navigation.navigate('LogInApp');
+          navigation.navigate('EmrContacts');
         },
       },
-    ]);
+    ]
+  );
   };
 
-  const handleRemoveEmergencyContact = (indexToRemove) => {
-    setEmergencyContacts((contacts) =>
-      contacts.filter((_, index) => index !== indexToRemove)
-    );
-  };
 
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
@@ -916,48 +918,95 @@ function SignUpScreen({ navigation }) {
         returnKeyType="done"
         secureTextEntry
       />
-      <Text style = {styles.homeText}>Emergency Contacts:</Text>
-      {emergencyContacts.map((contact, index) => (
-        <View key={index}>
-          <TextInput
-            style={styles.signUpInput}
-            returnKeyType="done"
-            placeholder={`Emergency Contact ${index + 1}`}
-            value={contact}
-            onChangeText={(value) => {
-              setEmergencyContacts((contacts) => {
-                const updatedContacts = [...contacts];
-                updatedContacts[index] = value;
-                return updatedContacts;
-              });
-            }}
-          />
-          {emergencyContacts.length > 1 && (
-              <Button
-                title="Remove"
-                color={'#BC6665'}
-                fontSize={12}
-                onPress={() => handleRemoveEmergencyContact(index)}
-              />
 
-          )}
-        </View>
-      ))}
-      {emergencyContacts.length < 3 && (
-      <Button
-        title="Add Emergency Contact"
-        fontSize={12}
-        onPress={handleAddEmergencyContact}
-        color={'#438C9D'}
-      />)}
-      <TouchableOpacity style={styles.saveButton} onPress={SaveChangesButtonAlert}>
-          <Text style={styles.buttonText}>Submit</Text>
+      <TouchableOpacity style={styles.saveButton} onPress={NextButtonAlert}>
+          <Text style={styles.buttonText}>Next</Text>
         </TouchableOpacity>
         </ScrollView>
     </View>
   );
 }
 
+function EmrContactsScreen({ navigation }) {
+  const [emergencyContacts, setEmergencyContacts] = useState(['', '', '']);
+
+  const SaveChangesButtonAlert = () => {
+    const message = 'Changes saved!';
+    Alert.alert('Action completed', message, [
+      {
+        text: 'Edit',
+        onPress: () => console.log('Edit Pressed'),
+        style: 'Edit',
+      },
+      {
+        text: 'OK',
+        onPress: () => {
+          // Call SQL function to save data here??
+          navigation.navigate('LogInApp');
+        },
+      },
+    ]);
+  };
+
+  
+  const handleAddEmergencyContact = () => {
+    if (emergencyContacts.length < 3) {
+      setEmergencyContacts([...emergencyContacts, '']);
+    }
+  };
+
+  const handleRemoveEmergencyContact = (indexToRemove) => {
+    setEmergencyContacts((contacts) =>
+      contacts.filter((_, index) => index !== indexToRemove)
+    );
+  };
+
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
+      <Text style = {styles.title}>Emergency Contacts:</Text>
+      <Text style={styles.homeText}>
+      If we detect that you have fallen,{'\n'} we will notify the people you specify on this {'\n'}screen by sending them an email.{'\n'}{'\n'} You can enter the email addresses of up to three individuals.
+      </Text>
+    {
+      emergencyContacts.map((contact, index) => (
+      <View key={index}>
+        <TextInput
+          style={styles.signUpInput}
+          returnKeyType="done"
+          placeholder={`Emergency Contact ${index + 1} Email Address`}
+          value={contact}
+          onChangeText={(value) => {
+            setEmergencyContacts((contacts) => {
+              const updatedContacts = [...contacts];
+              updatedContacts[index] = value;
+              return updatedContacts;
+            });
+          }}
+        />
+        {emergencyContacts.length > 1 && (
+            <Button
+              title="Remove"
+              color={'#BC6665'}
+              fontSize={12}
+              onPress={() => handleRemoveEmergencyContact(index)}
+            />
+
+        )}
+      </View>
+    ))}
+    {emergencyContacts.length < 3 && (
+    <Button
+      title="Add Emergency Contact"
+      fontSize={12}
+      onPress={handleAddEmergencyContact}
+      color={'#438C9D'}
+    />)}
+    <TouchableOpacity style={styles.saveButton} onPress={SaveChangesButtonAlert}>
+      <Text style={styles.buttonText}>Submit</Text>
+    </TouchableOpacity>
+  </View>
+  );
+}
 
 
 const Stack = createNativeStackNavigator();
@@ -970,6 +1019,7 @@ const Auth = () => {
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{headerShown: false}} />
       <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{headerShown: false}} />
       <Stack.Screen name="SignUp" component={SignUpScreen} options={{headerShown: false}} />
+      <Stack.Screen name="EmrContacts" component={EmrContactsScreen} options={{headerShown: false}} />
     </Stack.Navigator>
   );
 };
@@ -1071,6 +1121,7 @@ const styles = StyleSheet.create({
   homeText:{
     fontSize: 16, 
     marginTop:20,
+    marginBottom:20,
     paddingHorizontal: 15,
     paddingVertical:5,
     textAlign: 'center',
