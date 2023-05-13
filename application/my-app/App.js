@@ -1072,27 +1072,35 @@ function EmrContactsScreen({ navigation }) {
         text: 'Edit',
         onPress: () => console.log('Edit Pressed'),
         style: 'Edit',
-      },
+      }, 
       {
         text: 'OK',
         onPress: async () => {
-          const response = await fetch('http://192.168.237.209:3306/new/contact', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ contacts: emergencyContacts }),
-          });
-          if (response.ok) {
-            navigation.navigate('LogInApp');
-          } else {
-            // handle error case here
+          try {
+            const responseMac = await fetch('https://io.adafruit.com/api/v2/matanbakva/feeds/', {
+              headers: {
+                'X-AIO-Key': 'aio_OgzQ40DJCO3WVskhYoiwi1imzQMK',
+                'Content-Type': 'application/json'
+              }
+            });
+            if (responseMac.ok) {
+              const response = await fetch('http://192.168.237.209:3306/new/contact', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ contacts: emergencyContacts }),
+              });
+              if (response.ok) {
+                navigation.navigate('LogInApp');
+              }
+            }
+          } catch (error) {
+            console.log(error);
           }
-        },
-      },
-    ]);
-  };
-
+        }
+    }])
+    }
   const handleAddEmergencyContact = () => {
     if (emergencyContacts.length < 3) {
       setEmergencyContacts([...emergencyContacts, '']);
