@@ -1,0 +1,44 @@
+15-05-2023 15:52:17.146 INFO: Incoming request | #1 | resource: /logs/level | HTTP Verb GET | request #1
+15-05-2023 15:52:17.900 DEBUG: Last dose was retrieved successfuly | request #1
+15-05-2023 15:52:17.929 INFO: Incoming request | #2 | resource: /logs/level | HTTP Verb GET | request #2
+15-05-2023 15:52:18.647 DEBUG: Status was retrieved successfuly | request #2
+15-05-2023 15:52:47.290 INFO: Incoming request | #3 | resource: /logs/level | HTTP Verb GET | request #3
+15-05-2023 15:52:48.309 DEBUG: Last dose was retrieved successfuly | request #3
+15-05-2023 15:52:48.338 INFO: Incoming request | #4 | resource: /logs/level | HTTP Verb GET | request #4
+15-05-2023 15:52:49.104 DEBUG: Status was retrieved successfuly | request #4
+15-05-2023 15:52:54.561 INFO: Incoming request | #5 | resource: /logs/level | HTTP Verb GET | request #5
+15-05-2023 15:52:55.461 DEBUG: Last dose was retrieved successfuly | request #5
+15-05-2023 15:52:55.486 INFO: Incoming request | #6 | resource: /logs/level | HTTP Verb GET | request #6
+15-05-2023 15:52:56.327 DEBUG: Status was retrieved successfuly | request #6
+15-05-2023 15:52:57.839 INFO: Incoming request | #7 | resource: /logs/level | HTTP Verb GET | request #7
+15-05-2023 15:52:58.649 DEBUG: Last dose was retrieved successfuly | request #7
+15-05-2023 15:52:58.708 INFO: Incoming request | #8 | resource: /logs/level | HTTP Verb GET | request #8
+15-05-2023 15:52:59.527 DEBUG: Status was retrieved successfuly | request #8
+15-05-2023 15:53:34.011 INFO: Incoming request | #9 | resource: /logs/level | HTTP Verb GET | request #9
+15-05-2023 15:53:34.989 DEBUG: Last dose was retrieved successfuly | request #9
+15-05-2023 15:53:35.013 INFO: Incoming request | #10 | resource: /logs/level | HTTP Verb GET | request #10
+15-05-2023 15:53:35.982 DEBUG: Status was retrieved successfuly | request #10
+15-05-2023 15:53:36.906 INFO: Incoming request | #11 | resource: /logs/level | HTTP Verb GET | request #11
+15-05-2023 15:53:37.829 DEBUG: Last dose was retrieved successfuly | request #11
+15-05-2023 15:53:37.858 INFO: Incoming request | #12 | resource: /logs/level | HTTP Verb GET | request #12
+15-05-2023 15:53:38.754 DEBUG: Status was retrieved successfuly | request #12
+15-05-2023 15:53:41.567 INFO: Incoming request | #13 | resource: /logs/level | HTTP Verb GET | request #13
+15-05-2023 15:53:42.418 DEBUG: Last dose was retrieved successfuly | request #13
+15-05-2023 15:53:42.451 INFO: Incoming request | #14 | resource: /logs/level | HTTP Verb GET | request #14
+15-05-2023 15:53:43.277 DEBUG: Status was retrieved successfuly | request #14
+15-05-2023 15:54:05.510 INFO: Incoming request | #15 | resource: /logs/level | HTTP Verb GET | request #15
+15-05-2023 15:54:06.423 DEBUG: Last dose was retrieved successfuly | request #15
+15-05-2023 15:54:06.447 INFO: Incoming request | #16 | resource: /logs/level | HTTP Verb GET | request #16
+15-05-2023 15:54:07.184 DEBUG: Status was retrieved successfuly | request #16
+15-05-2023 15:54:32.489 INFO: Incoming request | #17 | resource: /logs/level | HTTP Verb GET | request #17
+15-05-2023 15:54:33.241 DEBUG: Last dose was retrieved successfuly | request #17
+15-05-2023 15:54:33.269 INFO: Incoming request | #18 | resource: /logs/level | HTTP Verb GET | request #18
+15-05-2023 15:54:34.098 DEBUG: Status was retrieved successfuly | request #18
+15-05-2023 15:54:40.322 INFO: Incoming request | #19 | resource: /logs/level | HTTP Verb GET | request #19
+15-05-2023 15:54:41.223 DEBUG: Last dose was retrieved successfuly | request #19
+15-05-2023 15:54:41.252 INFO: Incoming request | #20 | resource: /logs/level | HTTP Verb GET | request #20
+15-05-2023 15:54:42.152 DEBUG: Status was retrieved successfuly | request #20
+15-05-2023 15:54:47.308 INFO: Incoming request | #21 | resource: /logs/level | HTTP Verb GET | request #21
+15-05-2023 15:54:48.049 DEBUG: Last dose was retrieved successfuly | request #21
+15-05-2023 15:54:48.082 INFO: Incoming request | #22 | resource: /logs/level | HTTP Verb GET | request #22
+15-05-2023 15:54:48.782 DEBUG: Status was retrieved successfuly | request #22
