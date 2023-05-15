@@ -9,6 +9,14 @@
 #include <vector>
 #include <Arduino_JSON.h>
 #include <string.h>
+#include "AdafruitIO_WiFi.h"
+
+#define IO_USERNAME  "matanbakva"
+#define IO_KEY       "aio_OgzQ40DJCO3WVskhYoiwi1imzQMK"
+
+AdafruitIO_WiFi *io;
+
+AdafruitIO_Feed *feed;
 
 
 String ids = WiFi.macAddress();
@@ -83,9 +91,7 @@ void mpu_read();
 void setupMpu();
 void checkSettings();
 bool sendShakingsData();
-int analyzeData();
 void sendMpuStatus();
-
 
 void setupMpu(){
   while (!Serial)
@@ -165,10 +171,6 @@ void setupMpu(){
   delay(100);  
 }
 
-int analyzeData(){
-  return 0;
-}
-
 void setup() {
   Serial.begin(115200);
   
@@ -179,6 +181,13 @@ void setup() {
   server.begin();
 
   //setupMpu();
+
+  io = new AdafruitIO_WiFi(IO_USERNAME, IO_KEY, "", "");
+
+  io->connect();
+
+  feed = io->feed("stay stable");
+
 
   Wire.begin();
   Wire.beginTransmission(MPU_addr);
@@ -232,7 +241,7 @@ bool checkStatus(){
 void sendCheckStatus(bool check){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://10.100.102.2:3306/check_connection";
+  String serverPath = "http://172.20.10.5:3306/check_connection";//aws server ip: 
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
 
@@ -243,7 +252,7 @@ void sendCheckStatus(bool check){
   
   http.addHeader("Content-Type", "application/json");
   char  buffer[20];
-  sprintf(buffer, "{\"mac\":%s, \"status\":%d", id, int(check));
+  sprintf(buffer, "{\"mac\":%s, \"status\":%d}", id, int(check));
   String httpRequestData = buffer;
   // Send HTTP POST request
   int httpResponseCode = http.PUT(httpRequestData);
@@ -282,7 +291,7 @@ void sendCheckStatus(bool check){
 void sendFallRequest(bool check){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://10.100.102.2:3306/alert";
+  String serverPath = "http://172.20.10.5:3306/alert";
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
 
@@ -293,7 +302,7 @@ void sendFallRequest(bool check){
   
   http.addHeader("Content-Type", "application/json");
   char  buffer[20];
-  sprintf(buffer, "{\"mac\":%s", id);
+  sprintf(buffer, "{\"mac\":%s}", id);
   String httpRequestData = buffer;
   // Send HTTP POST request
   int httpResponseCode = http.PUT(httpRequestData);
@@ -333,7 +342,7 @@ void sendFallRequest(bool check){
 void sendFallRequest(){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://10.100.102.2:3306/alert";
+  String serverPath = "http://172.20.10.5:3306/alert";
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
 
@@ -344,7 +353,7 @@ void sendFallRequest(){
   
   http.addHeader("Content-Type", "application/json");
   char  buffer[1000];
-  sprintf(buffer, "{\"mac\":%s", id);
+  sprintf(buffer, "{\"mac\":%s}", id);
   String httpRequestData = buffer;
   // Send HTTP POST request
   int httpResponseCode = http.PUT(httpRequestData);
@@ -383,7 +392,7 @@ void sendFallRequest(){
 bool sendShakingsData(){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://10.100.102.2:3306/information";
+  String serverPath = "http://172.20.10.5:3306/information";
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
   // If you need Node-RED/server authentication, insert user and password below
@@ -572,7 +581,14 @@ void mpu_read() {
    GyZ = Wire.read() << 8 | Wire.read(); // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
 }
 
+bool start = true;
+
 void loop() {
+  io->run();
+  if(start){
+    feed->save(String(id)); 
+    start = false;  
+  }
   bool sent = false;
   sendResponse();
   bool check = checkStatus();
@@ -580,6 +596,7 @@ void loop() {
     sendCheckStatus(check);
     lastTimeCheck = millis();
   }
+
   if(check){
     receiveMovement();
     delay(100);
