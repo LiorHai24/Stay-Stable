@@ -232,7 +232,7 @@ bool checkStatus(){
 void sendCheckStatus(bool check){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://10.100.102.2:3306/check_connection";
+  String serverPath = "http://172.20.10.5:3306/check_connection";
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
 
@@ -243,7 +243,7 @@ void sendCheckStatus(bool check){
   
   http.addHeader("Content-Type", "application/json");
   char  buffer[20];
-  sprintf(buffer, "{\"mac\":%s, \"status\":%d", id, int(check));
+  sprintf(buffer, "{\"mac\":%s, \"status\":%d}", id, int(check));
   String httpRequestData = buffer;
   // Send HTTP POST request
   int httpResponseCode = http.PUT(httpRequestData);
@@ -282,7 +282,7 @@ void sendCheckStatus(bool check){
 void sendFallRequest(bool check){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://10.100.102.2:3306/alert";
+  String serverPath = "http://172.20.10.5:3306/alert";
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
 
@@ -293,7 +293,7 @@ void sendFallRequest(bool check){
   
   http.addHeader("Content-Type", "application/json");
   char  buffer[20];
-  sprintf(buffer, "{\"mac\":%s", id);
+  sprintf(buffer, "{\"mac\":%s}", id);
   String httpRequestData = buffer;
   // Send HTTP POST request
   int httpResponseCode = http.PUT(httpRequestData);
@@ -333,7 +333,7 @@ void sendFallRequest(bool check){
 void sendFallRequest(){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://10.100.102.2:3306/alert";
+  String serverPath = "http://172.20.10.5:3306/alert";
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
 
@@ -344,7 +344,7 @@ void sendFallRequest(){
   
   http.addHeader("Content-Type", "application/json");
   char  buffer[1000];
-  sprintf(buffer, "{\"mac\":%s", id);
+  sprintf(buffer, "{\"mac\":%s}", id);
   String httpRequestData = buffer;
   // Send HTTP POST request
   int httpResponseCode = http.PUT(httpRequestData);
@@ -383,7 +383,7 @@ void sendFallRequest(){
 bool sendShakingsData(){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://10.100.102.2:3306/information";
+  String serverPath = "http://172.20.10.5:3306/information";
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
   // If you need Node-RED/server authentication, insert user and password below
