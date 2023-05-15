@@ -1,42 +1,3 @@
-/*import React from "react";
-import { NavigationContainer } from "@react-navigation/native";
-import { createStackNavigator } from '@react-navigation/stack';
-//import Chat from "./screens/Chat";
-import Home from "./screens/Home";
-//import Login from "./screens/Login";
-const Stack = createStackNavigator();
-
-function ChatStack(){
-  return(
-    <Stack.Navigator>
-      <Stack.Screen name="Chat" component={Chat}/>
-    </Stack.Navigator>
-  )
-}*/
-/*
-function HomeScreen(){
- return (
-  <Stack.Navigator>
-  <Stack.Screen name="Home" component={Home}/>
-</Stack.Navigator>
-
-  )
-}
-
-function RootNavigator(){//more navigation to here      // add <ChatStack/>
-  return(
-    <NavigationContainer>
-      <HomeScreen/>
-    </NavigationContainer>
-  )
-}
-
-
-export default function App() {
-  return <RootNavigator/>
-}
-*/
-
 import * as React from 'react';
 import { Button, View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -45,35 +6,61 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StyleSheet, TextInput, KeyboardAvoidingView,ScrollView, TouchableOpacity, Image, SafeAreaView, Alert} from "react-native";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import moment from 'moment';
-import {useState} from 'react';
+import  { useState, useEffect } from 'react';
 import SettingsList from 'react-native-settings-list';
 import { createStackNavigator } from '@react-navigation/stack'
 import {GiftedChat} from 'react-native-gifted-chat';
+import { Ionicons } from '@expo/vector-icons'; 
+import Video from 'react-native-video';
+        /*<TouchableOpacity onPress={() => setVideoUrl(require("'./assets/symptoms.mp4'"))} style={styles.button}>
+          <Text style={styles.buttonText}>Info</Text>
+        </TouchableOpacity>*/
+
 
 // ************************************************************Home sceen*********************************************************
 //GET method:
-//makes a GET request to the server using axios
-/*
 function FrontHomeScreen({ navigation }) {
-  const [lastDose, setLastDose] = useState({date: '', time: '', dosage: ''});
-
+  const [lastDose, setLastDose] = useState({ date: '', time: '', dosage: '' });
+  payload = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({id: global.user_id})
+  };
+  console.log(`id: ${global.user_id}`);
   useEffect(() => {
     // Call GET request to the server to get the last dose
-    axios.get('http://server-url.com/api/lastdose')
-      .then(response => {
-        // Update the state with the last dose
+    fetch('http://192.168.237.209:3306/last_dose', payload)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      // Call GET request to the server to get the last dose
+      //return fetch('http://192.168.237.209:3306//last_dose', payload);
+    })
+    .then((data) => {
+      // Update the state with the last dose
+      if(data.answer == 1){
         setLastDose({
-          date: response.data.date,
-          time: response.data.time,
-          dosage: response.data.dosage
+          date: data.result.date,
+          time: data.result.time,
+          dosage: data.result.dosage,
         });
-      })
-      .catch(error => {
-        console.log(error);
-      });
+      }
+      else{
+        setLastDose({
+          date: 'No data',
+          time: 'No data',
+          dosage: 'No data',
+        });
+      }
+    })
+    .catch((error) => {
+      console.log(error);
+    });
   }, []);
-
-  return (
+  return(
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
       <Image
         style={{
@@ -84,25 +71,35 @@ function FrontHomeScreen({ navigation }) {
         source={require('./assets/HomePage.png')}
       />
       <Text style= {styles.BraceletStatus}>Bracelet Mode: (bracelet mode)</Text>
-      <Text style= {styles.homeText}>Your last dose was taken at:</Text>
-      <Text style= {styles.homeText}>Date: {lastDose.date}</Text>
-      <Text style= {styles.homeText}>Time: {lastDose.time}</Text>
-      <Text style= {styles.homeText}>Dosage: {lastDose.dosage}</Text>
+      <Text style= {styles.homeText}>
+        <Ionicons name="medkit-outline" size={24} color="black" />
+        (last dose in mg)
+      </Text>
+      <Text style= {styles.homeText}>
+        <Ionicons name="calendar-outline" size={24} color="black" />
+        (date shown)
+      </Text>
+      <Text style= {styles.homeText}>
+        <Ionicons name="time-outline" size={24} color="black" />
+       (time shown)
+      </Text>
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity
-          //onPress= {signInWithEmailAndPassword}
-          onPress={()=>navigation.navigate('NewDose')}
+          onPress={() => navigation.navigate('NewDose')}
           style={styles.button}>
-          <Text style = {styles.buttonText}>Enter new dose</Text>
+          <Text style={styles.buttonText}>Enter new dose</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-*/
 
+/*
 function FrontHomeScreen({ navigation }) {
+  const [videoUrl, setVideoUrl] = useState('');
+
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
       <Image
@@ -114,78 +111,43 @@ function FrontHomeScreen({ navigation }) {
         source={require('./assets/HomePage.png')}
       />
       <Text style= {styles.BraceletStatus}>Bracelet Mode: (bracelet mode)</Text>
-      <Text style= {styles.homeText}>Your last dose was taken at:</Text>
-      <Text style= {styles.homeText}>Date:(date shown)</Text>
-      <Text style= {styles.homeText}>Time:(time shown)</Text>
-      <Text style= {styles.homeText}>Dosage:(last dosage shown)</Text>
+      <Text style= {styles.homeText}>
+        <Ionicons name="medkit-outline" size={24} color="black" />
+        (last dose in mg)
+      </Text>
+      <Text style= {styles.homeText}>
+        <Ionicons name="calendar-outline" size={24} color="black" />
+        (date shown)
+      </Text>
+      <Text style= {styles.homeText}>
+        <Ionicons name="time-outline" size={24} color="black" />
+       (time shown)
+      </Text>
+
       <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                    //onPress= {signInWithEmailAndPassword}
-                    onPress={()=>navigation.navigate('NewDose')}
-                    style={styles.button}>
-                    <Text style = {styles.buttonText}>Enter new dose</Text>
-                </TouchableOpacity>
-           </View>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('NewDose')}
+          style={styles.button}>
+          <Text style={styles.buttonText}>Enter new dose</Text>
+        </TouchableOpacity>
+        
+
+        
+      </View>
+
+      {videoUrl && (
+        <Video source={{ uri: videoUrl }} style={{ width: 300, height: 200 }} />
+      )}
     </View>
   );
 }
-
+*/
 // ************************************************************New Dose sceen*********************************************************
 // POST method: 
 // http://server-url.com/api/dosage
 // http://server-url.com is the base URL of the server.
 // /api/dosage  is the endpoint that we want to access on the server.
 // NEED TO: import moment from 'moment'; // Import moment library for date/time formatting
-/*
-const createButtonAlert = () => {
-  const formattedDate = moment(date).format('DD-MM-YYYY');
-  const formattedTime = moment(time).format('HH:mm:ss');
-  const message = `Time: ${formattedTime}, Dosage: ${dosage}`;
-  
-  // construct the request payload
-  const payload = {
-    date: formattedDate,
-    time: formattedTime,
-    dosage: dosage
-  };
-  
-  // send the POST request to the server
-  fetch('http://server-url.com/api/dosage', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    // if response is ok, navigate to FrontHome screen
-    navigation.navigate('FrontHome');
-  })
-  .catch(error => {
-    console.error('There was a problem with the POST request:', error);
-  });
-  
-  Alert.alert('Action completed', message, [
-    {
-      text: 'Edit',
-      onPress: () => console.log('Edit Pressed'),
-      style: 'Edit',
-    },
-    {
-      text: 'OK',
-      onPress: () => {
-        // navigate to FrontHome screen
-        navigation.navigate('FrontHome');
-      },
-    },
-  ]);
-};
-*/
-
-
 
  function NewDoseScreen({ navigation }) {
   const [dosage, setDosage] = useState('');
@@ -205,24 +167,64 @@ const createButtonAlert = () => {
     setShowTimepicker(false);
     setTime(currentTime);
   };
+
   const createButtonAlert = () => {
-    const formattedDate = moment(date).format('YYYY-MM-DD');
-    const formattedTime = moment(time).format('HH:mm:ss');
+    const formattedDate = moment(date).format('DD-MM-YYYY');
+    const formattedTime = moment(time).format('HH:mm');
     const message = `Time: ${formattedTime}, Dosage: ${dosage}`;
-    Alert.alert('Action completed', message, [
-      {
-        text: 'Edit',
-        onPress: () => console.log('Edit Pressed'),
-        style: 'Edit',
+    const empty_message ='';
+    // construct the request payload
+    const payload = {
+      id: global.user_id,
+      date: formattedDate,
+      time: formattedTime,
+      dosage: dosage
+    };
+    
+    // send the POST request to the server
+    fetch('http://172.20.10.5:3306/dose', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
       },
+      body: JSON.stringify(payload)
+    })
+    .then(response => {
+      if (!response.ok) {
+        Alert.alert('There is a problem, please try again.', empty_message, [
+          {
+            text: 'OK',
+            onPress: () => {
+              navigation.navigate('NewDose'); // nstay at this current screen
+            },
+          },
+        ]);
+        throw new Error('Network response was not ok');
+      }
+      else
       {
-        text: 'OK',
-        onPress: () => {
-          // Call SQL function to save data here
-          navigation.navigate('FrontHome');
-        },
-      },
-    ]);
+        Alert.alert('Action completed', message, [
+          {
+            text: 'Edit',
+            onPress: () => console.log('Edit Pressed'),
+            style: 'Edit',
+          },
+          {
+            text: 'OK',
+            onPress: () => {
+              navigation.navigate('FrontHome'); // navigate to FrontHome screen
+            },
+          },
+        ]);
+      }
+      // if response is ok, navigate to FrontHome screen
+      navigation.navigate('FrontHome');
+    })
+    .catch(error => {
+      console.error('There was a problem with the POST request:', error);
+    });
+    
+
   };
 
 
@@ -244,7 +246,7 @@ const createButtonAlert = () => {
           <Text style={styles.homeText}>Enter new dose:</Text>
           <TextInput
             style={styles.input}
-            placeholder="Dosage"
+            placeholder="Dosage in mg"
             keyboardType="numeric"
             returnKeyType="done"
             value={dosage}
@@ -270,7 +272,7 @@ const createButtonAlert = () => {
         </View>
         <View style={styles.formField}>
           <TouchableOpacity onPress={() => setShowTimepicker(true)}>
-            <Text style = {styles.homeText}>Time: {moment(time).format('hh:mm A')}</Text>
+            <Text style = {styles.homeText}>Time: {moment(time).format('HH:mm')}</Text>
           </TouchableOpacity>
           {showTimepicker && (
             <View style={{ justifyContent: 'center', alignItems: 'center' }}>
@@ -278,10 +280,9 @@ const createButtonAlert = () => {
               testID="timepicker"
               value={time}
               mode="time"
-              is24Hour={false}
+              is24Hour={true}
               display="default"
               onChange={handleTimepicker}
-
             />
            </View>
           )}
@@ -326,6 +327,7 @@ function AllPrevDosesScreen({navigation}){
 function SettingsAndProfileScreen({ navigation }) {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
+  const [madison_name, setMadison] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emergencyContacts, setEmergencyContacts] = useState(['', '', '']);
@@ -351,8 +353,8 @@ function SettingsAndProfileScreen({ navigation }) {
       {
         text: 'OK',
         onPress: () => {
-          // Call SQL function to save data here
-          navigation.navigate('FrontHome');
+          // Call SQL function to save data here??
+          navigation.navigate('LogInApp');
         },
       },
     ]);
@@ -366,24 +368,44 @@ function SettingsAndProfileScreen({ navigation }) {
 
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
-      <Text style={styles.homeText}>Profile Details</Text>
+      <ScrollView>
+       <Image
+        style={{
+          resizeMode: 'contain',
+          height: 300,
+          width: 350,
+          marginTop: 30 
+        }}
+        source={require('./assets/profile.png')}
+      />
+      <Text style={[styles.title, { marginTop: -30 }]}>Profile</Text>
       <TextInput
-       style={styles.input}
+       style={styles.signUpInput}
         placeholder="Name"
         value={name}
         onChangeText={setName}
         returnKeyType="done"
+        alignItems={'center'}
+        justifyContent={'center'}
       />
       <TextInput
-      style={styles.input}
+      style={styles.signUpInput}
         placeholder="Age"
         value={age}
         onChangeText={setAge}
         keyboardType="numeric"
         returnKeyType="done"
       />
+            <TextInput
+      style={styles.signUpInput}
+        placeholder="Madison name"
+        value={madison_name}
+        onChangeText={setMadison}
+        keyboardType="email-address"
+        returnKeyType="done"
+      />
       <TextInput
-      style={styles.input}
+      style={styles.signUpInput}
         placeholder="Email"
         value={email}
         onChangeText={setEmail}
@@ -391,7 +413,7 @@ function SettingsAndProfileScreen({ navigation }) {
         returnKeyType="done"
       />
       <TextInput
-        style={styles.input}
+        style={styles.signUpInput}
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
@@ -402,7 +424,7 @@ function SettingsAndProfileScreen({ navigation }) {
       {emergencyContacts.map((contact, index) => (
         <View key={index}>
           <TextInput
-            style={styles.input}
+            style={styles.signUpInput}
             returnKeyType="done"
             placeholder={`Emergency Contact ${index + 1}`}
             value={contact}
@@ -432,41 +454,103 @@ function SettingsAndProfileScreen({ navigation }) {
         onPress={handleAddEmergencyContact}
         color={'#438C9D'}
       />)}
-      <TouchableOpacity style={styles.button} onPress={SaveChangesButtonAlert}>
-          <Text style={styles.buttonText}>Continue</Text>
+      <TouchableOpacity style={styles.saveButton} onPress={SaveChangesButtonAlert}>
+          <Text style={styles.buttonText}>Submit</Text>
         </TouchableOpacity>
+        </ScrollView>
     </View>
   );
 }
 
 
+
 // ************************************************************Login sceen*********************************************************
 
-/*
+//this is in http request
+
 function LogInAppScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  
   const handleLogin = () => {
     const requestOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email, password: password })
     };
-    fetch('http://server-url.com/dosage', requestOptions)
+
+    fetch('http://192.168.237.209:3306/login', requestOptions)
       .then(response => response.json())
       .then(data => {
-        // handle response data here
+        if (data['answer'] === 1) {
+          global.user_id = data['user']['id']
+          navigation.navigate(Home, { email, password });
+        } else {
+          console.log("User does not exist");
+          alert('User does not exist');
+        }
         console.log(data);
-        navigation.navigate(Home, { email, password });
       })
       .catch(error => console.error(error));
   };
 
-  // rest of the  code
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
+      <Image
+        style={{
+          resizeMode: 'cover',
+          height: 200,
+          width: 350,
+        }}
+        source={require('./assets/backImage.png')}
+      />
+      <Text style ={styles.title}>Login</Text>
+       <TextInput
+      style={styles.logInInput}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+      
+      />
+      <TextInput
+        style={styles.logInInput}
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        returnKeyType="done"
+        secureTextEntry
+      />
+      <Button
+        title="Forgot Password?"
+        fontSize={10}
+        //onPress={handleForgotPassword}
+        color={'#438C9D'}
+        onPress={()=>navigation.navigate('ForgotPassword')}
+      />
+      <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                    onPress= {handleLogin}
+                    //onPress={()=>navigation.navigate('FrontHome')}
+                    style={styles.button}>
+                    <Text style = {styles.buttonText}>Login</Text>
+                </TouchableOpacity>
+      </View>
+      <Text style={styles.homeText}>New to Stayble?</Text>
+      <Button
+        title="SignUp"
+        fontSize={10}
+        onPress={()=>navigation.navigate('SignUp')}
+        color={'#438C9D'}
+        //underline= {textDecorationLine= 'underline'} - NOT WORKING!!!
+      />
+    </View>
+  );
 }
-*/
 
+//this is working without the server
+/*
 function LogInAppScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -533,9 +617,67 @@ function LogInAppScreen({ navigation }) {
     </View>
   );
 }
-
+*/
 // ************************************************************Forgot password sceen*********************************************************
+//in http
+/*
+function ForgotPasswordScreen({ navigation }) {
+  const [email, setEmail] = useState('');
 
+  const handleResetPassword = async () => {
+    const payload = {
+      email: email,
+    };
+    try {
+      const response = await fetch('http://192.168.237.209:3306/reset_password', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      console.log(data);
+      navigation.navigate('ResetPassword', { email });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
+       <Image
+        style={{
+          resizeMode: 'cover',
+          height: 320,
+          width: 300,
+        }}
+        source={require('./assets/ForgotPassword.png')}
+      />
+      <Text style ={styles.title}>Forgot Password?</Text>
+      <TextInput
+        style={styles.logInInput}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        returnKeyType="done"
+      />
+      <Text style= {styles.homeText}>Don't worry! it happens.</Text>
+      <Text style= {styles.homeText}>Please enter the email address associated with your account.{'\n'} </Text>
+
+      
+       <View style={styles.buttonContainer}>
+         <TouchableOpacity onPress={handleResetPassword} style={styles.button}>
+           <Text style={styles.buttonText}>Submit</Text>
+         </TouchableOpacity>
+       </View>
+    </View>
+  );
+}
+
+*/
 
 function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -550,9 +692,6 @@ function ForgotPasswordScreen({ navigation }) {
         source={require('./assets/ForgotPassword.png')}
       />
       <Text style ={styles.title}>Forgot Password?</Text>
-      <Text style= {styles.homeText}>Don't worry! it happenes.</Text>
-      <Text style= {styles.homeText}>Please enter the email address associated with your account.{'\n'} </Text>
- 
       <TextInput
       style={styles.logInInput}
         placeholder="Email"
@@ -561,10 +700,14 @@ function ForgotPasswordScreen({ navigation }) {
         keyboardType="email-address"
         returnKeyType="done"
       />
+      <Text style= {styles.homeText}>Don't worry! it happenes.</Text>
+      <Text style= {styles.homeText}>Please enter the email address associated with your account.{'\n'} </Text>
+ 
+
        <View style={styles.buttonContainer}>
                 <TouchableOpacity
                     //onPress= {signInWithEmailAndPassword}
-                    onPress={()=>navigation.navigate('ResetPassword')}
+                    onPress={()=>navigation.navigate('ResetPassword', { email })}
                     style={styles.button}>
                     <Text style = {styles.buttonText}>Submit</Text>
                 </TouchableOpacity>
@@ -575,8 +718,8 @@ function ForgotPasswordScreen({ navigation }) {
 }
 
 // ************************************************************Reset Password sceen*********************************************************
-function ResetPasswordScreen({ navigation }) {
-  const [password, setPassword] = useState('');
+
+  /*this is not http
   const SaveChangesButtonAlert = () => {
     const message = 'Changes saved!';
     Alert.alert('Action completed', message, [
@@ -593,10 +736,48 @@ function ResetPasswordScreen({ navigation }) {
         },
       },
     ]);
+  };*/
+
+function ResetPasswordScreen({ navigation }) {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const route = useRoute();
+  const email = route.params.email;
+  
+  const SaveChangesButtonAlert = () => {
+    if (!password || !confirmPassword) {
+      Alert.alert('Error', 'Please fill in both password fields');
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    const payload = {
+      email: email,
+      password: password,
+    };
+
+    const response = fetch('http://192.168.237.209:3306/reset_password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (response.ok) {
+      navigation.navigate('FrontHome');
+    } else {
+      // handle error case here
+    }
   };
+
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
-       <Image
+      <Image
         style={{
           resizeMode: 'cover',
           height: 320,
@@ -613,22 +794,23 @@ function ResetPasswordScreen({ navigation }) {
         onChangeText={setPassword}
         returnKeyType="done"
         secureTextEntry
+        required={true}
       />
       <TextInput
         style={styles.logInInput}
         placeholder="Confirm new password"
-        value={password}
-        onChangeText={setPassword}
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
         returnKeyType="done"
         secureTextEntry
+        required={true}
       />
-       <View style={styles.buttonContainer}>
+      <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.button} onPress={SaveChangesButtonAlert}>
           <Text style={styles.buttonText}>Save changes</Text>
         </TouchableOpacity>
       </View>
     </View>
-
   );
 }
 /*
@@ -650,7 +832,9 @@ const SaveChangesButtonAlert = () => {
           password,
           emergencyContacts,
         };
-
+    const payload = {
+      password: password,
+    };
         const response = await fetch('http://server-url.com/api/signup', {
           method: 'POST',
           headers: {
@@ -667,50 +851,48 @@ const SaveChangesButtonAlert = () => {
       },
     },
   ]);
+  
 };
 */
 
 
 // ************************************************************Signup sceen************************************************
+//in http request POST
+/*
 function SignUpScreen({ navigation }) {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
+  const [madison_name, setMadison] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [emergencyContacts, setEmergencyContacts] = useState(['', '', '']);
+
+     const payload = {
+      id: global.user_id,
+      name: name,
+      age: age,
+      madison_name: madison_name
+      email: email,
+      password: password,
+    };
 
   const handleSubmit = () => {
-    // TODO: implement form submission logic
-  };
+    const data = {
+      name,
+      age,
+      madison_name,
+      email,
+      password,
+      /////emergency_contacts: emergencyContacts
+    };
 
-  const handleAddEmergencyContact = () => {
-    if (emergencyContacts.length < 3) {
-      setEmergencyContacts([...emergencyContacts, '']);
-    }
-  };
-
-  const SaveChangesButtonAlert = () => {
-    const message = 'Changes saved!';
-    Alert.alert('Action completed', message, [
-      {
-        text: 'Edit',
-        onPress: () => console.log('Edit Pressed'),
-        style: 'Edit',
-      },
-      {
-        text: 'OK',
-        onPress: () => {
-          // Call SQL function to save data here??
-          navigation.navigate('LogInApp');
-        },
-      },
-    ]);
-  };
-
-  const handleRemoveEmergencyContact = (indexToRemove) => {
-    setEmergencyContacts((contacts) =>
-      contacts.filter((_, index) => index !== indexToRemove)
-    );
+    axios.post('https://example.com/signup', data)
+      .then(response => {
+        console.log('Success:', response.data);
+        navigation.navigate('LogInApp');
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
   };
 
   return (
@@ -742,6 +924,14 @@ function SignUpScreen({ navigation }) {
         keyboardType="numeric"
         returnKeyType="done"
       />
+            <TextInput
+      style={styles.signUpInput}
+        placeholder="Madison name"
+        value={madison_name}
+        onChangeText={setMadison}
+        keyboardType="email-address"
+        returnKeyType="done"
+      />
       <TextInput
       style={styles.signUpInput}
         placeholder="Email"
@@ -758,42 +948,108 @@ function SignUpScreen({ navigation }) {
         returnKeyType="done"
         secureTextEntry
       />
-      <Text style = {styles.homeText}>Emergency Contacts:</Text>
-      {emergencyContacts.map((contact, index) => (
-        <View key={index}>
-          <TextInput
-            style={styles.signUpInput}
-            returnKeyType="done"
-            placeholder={`Emergency Contact ${index + 1}`}
-            value={contact}
-            onChangeText={(value) => {
-              setEmergencyContacts((contacts) => {
-                const updatedContacts = [...contacts];
-                updatedContacts[index] = value;
-                return updatedContacts;
-              });
-            }}
-          />
-          {emergencyContacts.length > 1 && (
-              <Button
-                title="Remove"
-                color={'#BC6665'}
-                fontSize={12}
-                onPress={() => handleRemoveEmergencyContact(index)}
-              />
 
-          )}
-        </View>
-      ))}
-      {emergencyContacts.length < 3 && (
-      <Button
-        title="Add Emergency Contact"
-        fontSize={12}
-        onPress={handleAddEmergencyContact}
-        color={'#438C9D'}
-      />)}
-      <TouchableOpacity style={styles.saveButton} onPress={SaveChangesButtonAlert}>
-          <Text style={styles.buttonText}>Submit</Text>
+      <TouchableOpacity style={styles.saveButton} onPress={NextButtonAlert}>
+          <Text style={styles.buttonText}>Next</Text>
+        </TouchableOpacity>
+        </ScrollView>
+    </View>
+  );
+}
+*/
+function SignUpScreen({ navigation }) {
+  const [name, setName] = useState('');
+  const [age, setAge] = useState('');
+  const [madison_name, setMadison] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+
+  const handleSubmit = () => {
+    // TODO: implement form submission logic
+  };
+
+  const NextButtonAlert = () => {
+    const message =" ";
+    Alert.alert('You are half way there!',message, [
+      {
+        text: 'Edit',
+        onPress: () => console.log('Edit Pressed'),
+        style: 'Edit',
+      },
+      {
+        text: 'OK',
+        onPress: () => {
+          // Call SQL function to save data here??
+          navigation.navigate('EmrContacts');
+        },
+      },
+    ]
+  );
+  };
+
+
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
+      <ScrollView>
+       <Image
+        style={{
+          resizeMode: 'contain',
+          height: 350,
+          width: 350,
+        }}
+        source={require('./assets/signup.png')}
+      />
+      <Text style={[styles.title, { marginTop: -70 }]}>SignUp</Text>
+      <TextInput
+       style={styles.signUpInput}
+        placeholder="Name"
+        value={name}
+        onChangeText={setName}
+        returnKeyType="done"
+        alignItems={'center'}
+        justifyContent={'center'}
+        required={true}
+      />
+      <TextInput
+      style={styles.signUpInput}
+        placeholder="Age"
+        value={age}
+        onChangeText={setAge}
+        keyboardType="numeric"
+        returnKeyType="done"
+        required={true}
+      />
+            <TextInput
+      style={styles.signUpInput}
+        placeholder="Madison name"
+        value={madison_name}
+        onChangeText={setMadison}
+        keyboardType="email-address"
+        returnKeyType="done"
+        required={true}
+      />
+      <TextInput
+      style={styles.signUpInput}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        returnKeyType="done"
+        required={true}
+      />
+      <TextInput
+        style={styles.signUpInput}
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        returnKeyType="done"
+        secureTextEntry
+        required={true}
+      />
+
+      <TouchableOpacity style={styles.saveButton} onPress={NextButtonAlert}>
+          <Text style={styles.buttonText}>Next</Text>
         </TouchableOpacity>
         </ScrollView>
     </View>
@@ -801,12 +1057,200 @@ function SignUpScreen({ navigation }) {
 }
 
 
-function Chat()
-{
-    return(
-        <GiftedChat/>
-    )
+
+
+
+
+//in http request POST
+function EmrContactsScreen({ navigation }) {
+  const [emergencyContacts, setEmergencyContacts] = useState(['']);
+
+  const SaveChangesButtonAlert = () => {
+    const message = 'Changes saved!';
+    Alert.alert('Action completed', message, [
+      {
+        text: 'Edit',
+        onPress: () => console.log('Edit Pressed'),
+        style: 'Edit',
+      }, 
+      {
+        text: 'OK',
+        onPress: async () => {
+          try {
+            const responseMac = await fetch('https://io.adafruit.com/api/v2/matanbakva/feeds/', {
+              headers: {
+                'X-AIO-Key': 'aio_OgzQ40DJCO3WVskhYoiwi1imzQMK',
+                'Content-Type': 'application/json'
+              }
+            });
+            if (responseMac.ok) {
+              const response = await fetch('http://192.168.237.209:3306/new/contact', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ contacts: emergencyContacts }),
+              });
+              if (response.ok) {
+                navigation.navigate('LogInApp');
+              }
+            }
+          } catch (error) {
+            console.log(error);
+          }
+        }
+    }])
+    }
+  const handleAddEmergencyContact = () => {
+    if (emergencyContacts.length < 3) {
+      setEmergencyContacts([...emergencyContacts, '']);
+    }
+  };
+
+  const handleRemoveEmergencyContact = (indexToRemove) => {
+    setEmergencyContacts((contacts) =>
+      contacts.filter((_, index) => index !== indexToRemove)
+    );
+  };
+
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
+      <Text style={styles.title}>Emergency Contacts:</Text>
+      <Text style={styles.homeText}>
+        If we detect that you have fallen,{'\n'} we will notify the people you specify on this {'\n'}screen by sending them an email.{'\n\n'} You can enter the email addresses of up to three individuals.
+      </Text>
+      {emergencyContacts.map((contact, index) => (
+        <View key={index}>
+          <TextInput
+              width = {300}
+              height = {40}
+            style={styles.signUpInput}
+            returnKeyType="done"
+            placeholder={`Emergency Contact ${index + 1} Email Address`}
+            value={contact}
+            alignItems={'center'}
+            justifyContent={'center'}
+            onChangeText={(value) => {
+            setEmergencyContacts((contacts) => {
+                const updatedContacts = [...contacts];
+                updatedContacts[index] = value;
+                return updatedContacts;
+              });
+            }}
+            required={index === 0}
+          />
+          {emergencyContacts.length > 1 && (
+            <Button
+              title="Remove"
+              color={'#BC6665'}
+              fontSize={12}
+              onPress={() => handleRemoveEmergencyContact(index)}
+            />
+          )}
+        </View>
+      ))}
+      {emergencyContacts.length < 3 && (
+        <Button
+          title="Add Emergency Contact"
+          fontSize={12}
+          onPress={handleAddEmergencyContact}
+          color={'#438C9D'}
+        />
+      )}
+      <TouchableOpacity style={styles.saveButton} onPress={SaveChangesButtonAlert}>
+        <Text style={styles.buttonText}>Submit</Text>
+      </TouchableOpacity>
+    </View>
+  );
 }
+
+
+
+//not in http request 
+/*
+function EmrContactsScreen({ navigation }) {
+  const [emergencyContacts, setEmergencyContacts] = useState(['', '', '']);
+
+  const SaveChangesButtonAlert = () => {
+    const message = 'Changes saved!';
+    Alert.alert('Action completed', message, [
+      {
+        text: 'Edit',
+        onPress: () => console.log('Edit Pressed'),
+        style: 'Edit',
+      },
+      {
+        text: 'OK',
+        onPress: () => {
+          // Call SQL function to save data here??
+          navigation.navigate('LogInApp');
+        },
+      },
+    ]);
+  };
+
+  
+  const handleAddEmergencyContact = () => {
+    if (emergencyContacts.length < 3) {
+      setEmergencyContacts([...emergencyContacts, '']);
+    }
+  };
+
+  const handleRemoveEmergencyContact = (indexToRemove) => {
+    setEmergencyContacts((contacts) =>
+      contacts.filter((_, index) => index !== indexToRemove)
+    );
+  };
+
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
+      <Text style = {styles.title}>Emergency Contacts:</Text>
+      <Text style={styles.homeText}>
+      If we detect that you have fallen,{'\n'} we will notify the people you specify on this {'\n'}screen by sending them an email.{'\n'}{'\n'} You can enter the email addresses of up to three individuals.
+      </Text>
+    {
+      emergencyContacts.map((contact, index) => (
+      <View key={index}>
+        <TextInput
+          style={styles.signUpInput}
+          returnKeyType="done"
+          placeholder={`Emergency Contact ${index + 1} Email Address`}
+          value={contact}
+          onChangeText={(value) => {
+            setEmergencyContacts((contacts) => {
+              const updatedContacts = [...contacts];
+              updatedContacts[index] = value;
+              return updatedContacts;
+            });
+          }}
+        />
+        {emergencyContacts.length > 1 && (
+            <Button
+              title="Remove"
+              color={'#BC6665'}
+              fontSize={12}
+              onPress={() => handleRemoveEmergencyContact(index)}
+            />
+
+        )}
+      </View>
+    ))}
+    {emergencyContacts.length < 3 && (
+    <Button
+      title="Add Emergency Contact"
+      fontSize={12}
+      onPress={handleAddEmergencyContact}
+      color={'#438C9D'}
+    />)}
+    <TouchableOpacity style={styles.saveButton} onPress={SaveChangesButtonAlert}>
+      <Text style={styles.buttonText}>Submit</Text>
+    </TouchableOpacity>
+  </View>
+  );
+}
+*/
+
+
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -818,26 +1262,64 @@ const Auth = () => {
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{headerShown: false}} />
       <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{headerShown: false}} />
       <Stack.Screen name="SignUp" component={SignUpScreen} options={{headerShown: false}} />
+      <Stack.Screen name="EmrContacts" component={EmrContactsScreen} options={{headerShown: false}} />
     </Stack.Navigator>
   );
 };
 
 const Home = () => {
-  return (
-    <Tab.Navigator>
-      <Tab.Screen name="Home" options={{ headerShown: false }}>
-          {() => (
-            <Stack.Navigator>
-              <Stack.Screen name="FrontHome"component={FrontHomeScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="NewDose" component={NewDoseScreen} options={{ headerShown: false }} />
-            </Stack.Navigator>
-          )}
-        </Tab.Screen>
-      <Tab.Screen name="Recomendations" component={RecommendationsForDosageScreen} options={{ headerShown: false }}/>
-      <Tab.Screen name="History" component={AllPrevDosesScreen} options={{ headerShown: false }}/>
-      <Tab.Screen name="Chat" component={Chat} options={{ headerShown: false }}/>
-      
-      
+  return ( 
+    <Tab.Navigator
+      tabBarOptions={{
+        activeTintColor: '#438C9D',
+        inactiveTintColor: 'gray',
+      }}>
+      <Tab.Screen
+        name="Home"
+        options={{
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={30} color={color} />
+          ),
+        }}
+      >
+        {() => (
+          <Stack.Navigator>
+            <Stack.Screen name="FrontHome" component={FrontHomeScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="NewDose" component={NewDoseScreen} options={{ headerShown: false }} />
+          </Stack.Navigator>
+        )}
+      </Tab.Screen>
+      <Tab.Screen
+        name="History"
+        component={AllPrevDosesScreen}
+        options={{
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="time-outline" size={30} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Recommendations"
+        component={RecommendationsForDosageScreen}
+        options={{
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="bookmark-outline" size={30} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={SettingsAndProfileScreen}
+        options={{
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-circle-outline" size={30} color={color} />
+          ),
+        }}
+      />
     </Tab.Navigator>
   );
 };
@@ -882,6 +1364,7 @@ const styles = StyleSheet.create({
   homeText:{
     fontSize: 16, 
     marginTop:20,
+    marginBottom:20,
     paddingHorizontal: 15,
     paddingVertical:5,
     textAlign: 'center',
@@ -962,6 +1445,11 @@ saveButton: {
   borderRadius: 10,
   margin: 10,
   alignSelf: 'center',
+  width: 150, // set a fixed width
+  height: 50, // set a fixed height
+  marginTop:20,
+ alignItems: 'center',
+ textAlign: 'center',
 },
 inputData:{ 
   backgroundColor: 'white',

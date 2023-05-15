@@ -9,6 +9,14 @@
 #include <vector>
 #include <Arduino_JSON.h>
 #include <string.h>
+#include "AdafruitIO_WiFi.h"
+
+#define IO_USERNAME  "matanbakva"
+#define IO_KEY       "aio_OgzQ40DJCO3WVskhYoiwi1imzQMK"
+
+AdafruitIO_WiFi *io;
+
+AdafruitIO_Feed *feed;
 
 
 String ids = WiFi.macAddress();
@@ -83,9 +91,7 @@ void mpu_read();
 void setupMpu();
 void checkSettings();
 bool sendShakingsData();
-int analyzeData();
 void sendMpuStatus();
-
 
 void setupMpu(){
   while (!Serial)
@@ -165,10 +171,6 @@ void setupMpu(){
   delay(100);  
 }
 
-int analyzeData(){
-  return 0;
-}
-
 void setup() {
   Serial.begin(115200);
   
@@ -179,6 +181,13 @@ void setup() {
   server.begin();
 
   //setupMpu();
+
+  io = new AdafruitIO_WiFi(IO_USERNAME, IO_KEY, "", "");
+
+  io->connect();
+
+  feed = io->feed("stay stable");
+
 
   Wire.begin();
   Wire.beginTransmission(MPU_addr);
@@ -243,10 +252,14 @@ void sendCheckStatus(bool check){
   
   http.addHeader("Content-Type", "application/json");
   char  buffer[20];
+<<<<<<< HEAD
   sprintf(buffer, "{\"mac\":%s, \"status\":%d}", id, int(check));
+=======
+  sprintf(buffer, "{\"mac\":%s, \"status\":%d}", "1234", int(check));
+>>>>>>> b865772a6f9343e986dc264f015737b138fe2d52
   String httpRequestData = buffer;
   // Send HTTP POST request
-  int httpResponseCode = http.PUT(httpRequestData);
+  int httpResponseCode = http.POST(httpRequestData);
   if (httpResponseCode>0) {
     Serial.print("HTTP Response code: ");
     Serial.println(httpResponseCode);
@@ -279,6 +292,7 @@ void sendCheckStatus(bool check){
   
 }
 
+<<<<<<< HEAD
 void sendFallRequest(bool check){
   WiFiClient client;
   HTTPClient http;
@@ -330,6 +344,8 @@ void sendFallRequest(bool check){
 }
 
 
+=======
+>>>>>>> b865772a6f9343e986dc264f015737b138fe2d52
 void sendFallRequest(){
   WiFiClient client;
   HTTPClient http;
@@ -572,7 +588,14 @@ void mpu_read() {
    GyZ = Wire.read() << 8 | Wire.read(); // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
 }
 
+bool start = true;
+
 void loop() {
+  io->run();
+  if(start){
+    feed->save(String(id)); 
+    start = false;  
+  }
   bool sent = false;
   sendResponse();
   bool check = checkStatus();
@@ -580,6 +603,7 @@ void loop() {
     sendCheckStatus(check);
     lastTimeCheck = millis();
   }
+
   if(check){
     receiveMovement();
     delay(100);
