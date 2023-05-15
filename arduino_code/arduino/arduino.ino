@@ -252,11 +252,7 @@ void sendCheckStatus(bool check){
   
   http.addHeader("Content-Type", "application/json");
   char  buffer[20];
-<<<<<<< HEAD
   sprintf(buffer, "{\"mac\":%s, \"status\":%d}", id, int(check));
-=======
-  sprintf(buffer, "{\"mac\":%s, \"status\":%d}", "1234", int(check));
->>>>>>> b865772a6f9343e986dc264f015737b138fe2d52
   String httpRequestData = buffer;
   // Send HTTP POST request
   int httpResponseCode = http.POST(httpRequestData);
@@ -292,7 +288,6 @@ void sendCheckStatus(bool check){
   
 }
 
-<<<<<<< HEAD
 void sendFallRequest(bool check){
   WiFiClient client;
   HTTPClient http;
@@ -344,8 +339,6 @@ void sendFallRequest(bool check){
 }
 
 
-=======
->>>>>>> b865772a6f9343e986dc264f015737b138fe2d52
 void sendFallRequest(){
   WiFiClient client;
   HTTPClient http;
