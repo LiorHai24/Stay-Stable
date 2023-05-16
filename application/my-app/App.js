@@ -1,6 +1,11 @@
 import * as React from "react";
-import { Button, View, Text } from "react-native";
-import { NavigationContainer, useRoute } from "@react-navigation/native";
+import { Button, View, Text, Dimensions } from "react-native";
+import {
+	NavigationContainer,
+	useIsFocused,
+	useRoute,
+	useFocusEffect,
+} from "@react-navigation/native";
 
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -32,63 +37,72 @@ import Video from "react-native-video";
 
 //GET method:
 function FrontHomeScreen({ navigation }) {
-	const [lastDose, setLastDose] = useState({ date: "", time: "", dosage: "" });
-	payload = {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({ id: global.user_id }),
-	};
-	useEffect(() => {
-		// Call GET request to the server to get the last dose
-		fetch("http://34.233.185.82:3306/last_dose", payload)
-			.then((response) => {
-				if (!response.ok) {
-					throw new Error("Network response was not ok");
-				}
-				return response.json(); // parse response body as JSON
-			})
-			.then((data) => {
-				console.log(data); // log the response body
-				payload = {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({ id: global.user_id }),
-				};
-				fetch("http://34.233.185.82:3306/check_connection", payload)
-					.then((response) => {
-						if (!response.ok) {
-							throw new Error("Network response was not ok");
-						}
-						return response.json(); // parse response body as JSON
-					})
-					.then((data1) => {
-						console.log(data1["status"]);
-						let status = data1["status"] == 1 ? "connected" : "not connect";
-						if (data["answer"] == 1) {
-							setLastDose({
-								status: status,
-								date: data.result.date,
-								time: data.result.time,
-								dosage: data.result.dosage,
-							});
-						} else {
-							setLastDose({
-								date: "No data",
-								time: "No data",
-								dosage: "No data",
-							});
-						}
-					});
-				// Update the state with the last dose
-			})
-			.catch((error) => {
-				console.log(error);
-			});
-	}, []);
+	const [lastDose, setLastDose] = useState({
+		date: "",
+		time: "",
+		dosage: "",
+		status: "",
+	});
+
+	useFocusEffect(
+		React.useCallback(() => {
+			const payload = {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ id: global.user_id }),
+			};
+
+			// Call GET request to the server to get the last dose
+			fetch("http://34.233.185.82:3306/last_dose", payload)
+				.then((response) => {
+					if (!response.ok) {
+						throw new Error("Network response was not ok");
+					}
+					return response.json(); // parse response body as JSON
+				})
+				.then((data) => {
+					console.log(data); // log the response body
+					global.date = data.result.date;
+					global.time = data.result.time;
+					global.dosage = data.result.dosage;
+					payload.body = JSON.stringify({ id: global.user_id });
+
+					fetch("http://34.233.185.82:3306/check_connection", payload)
+						.then((response) => {
+							if (!response.ok) {
+								throw new Error("Network response was not ok");
+							}
+							return response.json(); // parse response body as JSON
+						})
+						.then((data1) => {
+							console.log(data1["status"]);
+							let status1 = data1["status"] === 1 ? "connected" : "not connect";
+							if (data["answer"] === 1) {
+								setLastDose({
+									status: status1,
+									date: global.date,
+									time: global.time,
+									dosage: ` ${global.dosage}mg`,
+								});
+							} else {
+								setLastDose({
+									date: "No data",
+									time: "No data",
+									dosage: "No data",
+								});
+							}
+						});
+				})
+				.catch((error) => {
+					console.log(error);
+				});
+		}, [])
+	);
+
+	while (lastDose.dosage === undefined) {}
+	console.log(lastDose.dosage);
 	return (
 		<View
 			style={{
@@ -107,19 +121,19 @@ function FrontHomeScreen({ navigation }) {
 				source={require("./assets/HomePage.png")}
 			/>
 			<Text style={styles.BraceletStatus}>
-				Bracelet Mode: {setLastDose.status}
+				Bracelet Status: {lastDose.status}
 			</Text>
 			<Text style={styles.homeText}>
 				<Ionicons name="medkit-outline" size={24} color="black" />
-				{setLastDose.dosage}
+				{lastDose.dosage}
 			</Text>
 			<Text style={styles.homeText}>
 				<Ionicons name="calendar-outline" size={24} color="black" />
-				(date shown)
+				{lastDose.date}
 			</Text>
 			<Text style={styles.homeText}>
 				<Ionicons name="time-outline" size={24} color="black" />
-				(time shown)
+				{lastDose.time}
 			</Text>
 
 			<View style={styles.buttonContainer}>
@@ -218,6 +232,7 @@ function NewDoseScreen({ navigation }) {
 			time: formattedTime,
 			dosage: dosage,
 		};
+		console.log(payload);
 
 		// send the POST request to the server
 		fetch("http://34.233.185.82:3306/dose", {
@@ -365,6 +380,29 @@ function RecommendationsForDosageScreen({ navigation }) {
 }
 
 function AllPrevDosesScreen({ navigation }) {
+	const [prevDoses, setPrevDoses] = useState([]);
+	const isFocused = useIsFocused();
+	useFocusEffect(
+		React.useCallback(() => {
+			const payload = {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ id: global.user_id }),
+			};
+
+			console.log("here");
+			fetch("http://34.233.185.82:3306/get_doses_history", payload)
+				.then((response) => response.json())
+				.then((data) => {
+					data = data.doses;
+					setPrevDoses(data);
+				})
+				.catch((error) => console.error(error));
+		}, [])
+	);
+
 	return (
 		<View
 			style={{
@@ -374,20 +412,60 @@ function AllPrevDosesScreen({ navigation }) {
 				backgroundColor: "#F7F3E7",
 			}}
 		>
-			<Text style={styles.homeText}>
-				SHOW HERE ALL THE PREVIOUS DOSES TAKEN
-			</Text>
+			<ScrollView style={styles.ScrollViewStyle}>
+				{prevDoses.map((prevDose, index) => (
+					<View key={index} style={styles.containerRow}>
+						<Text style={styles.labelRow}>{index + 1})</Text>
+						<View>
+							<Text style={styles.labelRow}>Dosage:</Text>
+							<Text style={styles.textRow}>{prevDose.dosage}</Text>
+						</View>
+						<View>
+							<Text style={styles.labelRow}>Date:</Text>
+							<Text style={styles.textRow}>{prevDose.date}</Text>
+						</View>
+						<View>
+							<Text style={styles.labelRow}>Time:</Text>
+							<Text style={styles.textRow}>{prevDose.time}</Text>
+						</View>
+					</View>
+				))}
+			</ScrollView>
 		</View>
 	);
 }
 
 function SettingsAndProfileScreen({ navigation }) {
-	const [name, setName] = useState("");
+	const [fname, setFName] = useState("");
+	const [lname, setLName] = useState("");
 	const [age, setAge] = useState("");
 	const [medicine_name, setMedicine] = useState("");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [emergencyContacts, setEmergencyContacts] = useState(["", "", ""]);
+
+	useEffect(() => {
+		fetch("http://34.233.185.82:3306/get_user", {
+			method: "POST",
+			headers: {
+				Accept: "application/json",
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ id: global.user_id }),
+		})
+			.then((response) => response.json())
+			.then((data) => {
+				data = data.user;
+				console.log("data = " + data.age);
+				setFName(data.first_name);
+				setLName(data.last_name);
+				setAge(data.age.toString());
+				setMedicine(data.medicine_name);
+				setEmail(data.email);
+				setEmergencyContacts([data.contact1, data.contact2, data.contact3]);
+			})
+			.catch((error) => console.error(error));
+	}, []);
 
 	const handleAddEmergencyContact = () => {
 		if (emergencyContacts.length < 3) {
@@ -396,21 +474,42 @@ function SettingsAndProfileScreen({ navigation }) {
 	};
 
 	const SaveChangesButtonAlert = () => {
-		const message = "Changes saved!";
-		Alert.alert("Action completed", message, [
-			{
-				text: "Edit",
-				onPress: () => console.log("Edit Pressed"),
-				style: "Edit",
+		payload = {
+			id: global.user_id,
+			first_name: fname,
+			last_name: lname,
+			age: age,
+			email: email,
+			password: password,
+			contacts: emergencyContacts,
+		};
+		console.log(payload);
+		fetch("http://34.233.185.82:3306/update_user_information", {
+			method: "POST",
+			headers: {
+				Accept: "application/json",
+				"Content-Type": "application/json",
 			},
-			{
-				text: "OK",
-				onPress: () => {
-					// Call SQL function to save data here??
-					navigation.navigate("LogInApp");
-				},
-			},
-		]);
+			body: JSON.stringify(payload),
+		})
+			.then((response) => response.json())
+			.then((data) => {
+				const message = "Changes saved!";
+				Alert.alert("Action completed", message, [
+					{
+						text: "Edit",
+						onPress: () => console.log("Edit Pressed"),
+						style: "Edit",
+					},
+					{
+						text: "OK",
+						onPress: () => {
+							navigation.navigate("FrontHome");
+						},
+					},
+				]);
+			})
+			.catch((error) => console.error(error));
 	};
 
 	const handleRemoveEmergencyContact = (indexToRemove) => {
@@ -441,9 +540,18 @@ function SettingsAndProfileScreen({ navigation }) {
 				<Text style={[styles.title, { marginTop: -30 }]}>Profile</Text>
 				<TextInput
 					style={styles.signUpInput}
-					placeholder="Name"
-					value={name}
-					onChangeText={setName}
+					placeholder="first name"
+					value={fname}
+					onChangeText={setFName}
+					returnKeyType="done"
+					alignItems={"center"}
+					justifyContent={"center"}
+				/>
+				<TextInput
+					style={styles.signUpInput}
+					placeholder="last name"
+					value={lname}
+					onChangeText={setLName}
 					returnKeyType="done"
 					alignItems={"center"}
 					justifyContent={"center"}
@@ -1210,8 +1318,8 @@ function EmrContactsScreen({ navigation }) {
 
 				if (response.ok) {
 					const data = await response.json();
-					const message = data["result"];
-					Alert.alert("Action completed", message, [
+					global.user_id = data["result"];
+					Alert.alert("Action completed", "user added successfully", [
 						{
 							text: "go to home page",
 							onPress: () => navigation.navigate(Home, { email, password }),
@@ -1519,7 +1627,32 @@ const App = () => {
 
 export default App;
 
+const windowWidth = Dimensions.get("window").width;
+
 const styles = StyleSheet.create({
+	ScrollViewStyle: {
+		flexGrow: 1,
+	},
+	containerRow: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		backgroundColor: "#F5F5F5",
+		borderRadius: 8,
+		padding: 16,
+		marginHorizontal: 16,
+		width: windowWidth - 32,
+		height: 70,
+		marginTop: 40,
+	},
+	labelRow: {
+		fontSize: "auto",
+		fontWeight: "bold",
+		marginBottom: 4,
+	},
+	textRow: {
+		fontSize: "auto",
+		marginBottom: 8,
+	},
 	BraceletStatus: {
 		paddingHorizontal: 15,
 		paddingVertical: 10,
