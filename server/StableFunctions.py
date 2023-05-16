@@ -8,6 +8,7 @@ from twilio.rest import Client
 import hashlib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import re
 #import sys
 
 if not os.path.exists('logs'):#creation of logs folder
@@ -132,6 +133,8 @@ def New_User(app, request):##- with mac
     request_count += 1
     logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
 
+    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+
     dic = json.loads(request.data)
     mac = dic["mac"]
     first_name = dic["first_name"]
@@ -139,8 +142,6 @@ def New_User(app, request):##- with mac
     age = dic["age"]
     medicine_name = dic["medicine_name"]
     email = dic["email"].lower()
-    password = dic["password"]
-
     contacts = dic["contacts"]
     contact1, contact2, contact3 = "" , "" , ""
     length = len(contacts)
@@ -150,6 +151,25 @@ def New_User(app, request):##- with mac
             contact2 = contacts[1]
             if length >= 3:
                 contact3 = contacts[2]
+    if not re.fullmatch(regex, email):
+        logger.error("Server encountered an error ! Invalid Email", extra={"request_count": request_count})
+        result = "Server encountered an error ! Invalid Email"
+        Status = 406
+        ans = 0
+        return app.response_class(response=json.dumps({"answer": ans, "result": result}), mimetype='application/json', status = Status)
+    
+    for c in contacts:
+        if not re.fullmatch(regex, c):
+            logger.error("Server encountered an error ! Invalid Email", extra={"request_count": request_count})
+            result = "Server encountered an error ! Invalid Email"
+            Status = 406
+            ans = 0
+            return app.response_class(response=json.dumps({"answer": ans, "result": result}), mimetype='application/json', status = Status)
+        
+
+    password = dic["password"]
+
+    
 
     crypted_password = hashlib.sha256(password.encode()).hexdigest()
     crypted_mac = hashlib.sha256(mac.encode()).hexdigest()
@@ -171,11 +191,14 @@ def New_User(app, request):##- with mac
         cursor.execute(sql, record)
         
         if cursor.rowcount != 0:
+            sql = f"SELECT id FROM users WHERE email = '{email}'"
+            cursor.execute(sql)
+            id = cursor.fetchone()[0]
             logger.debug("User added successfuly", extra={"request_count": request_count})
             conn.commit()
             ans = 1
             Status = 200
-            result = "User added successfuly"
+            result = id
         else:
             ans = 0
             logger.error("Server encountered an error !", extra={"request_count": request_count})
@@ -230,7 +253,7 @@ def New_Contact(app, request):#still need to check if only mail or other details
     conn.close()
     return app.response_class(response=json.dumps({"answer": ans}), mimetype='application/json')
 
-def Get_Contacts(app, request):
+"""def Get_Contacts(app, request):
     global request_count
     request_count += 1
     logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
@@ -241,7 +264,7 @@ def Get_Contacts(app, request):
     conn = get_db_connection()
     cursor = conn.cursor(buffered=True)
     # Check if any rows were returned
-    contacts_query = f"""SELECT first_name, last_name, phone_number, email FROM contacts WHERE id = '{id}'"""
+    contacts_query = fSELECT first_name, last_name, phone_number, email FROM contacts WHERE id = '{id}'
 
     cursor.execute(contacts_query)
     contacts_table = cursor.fetchall()
@@ -256,7 +279,7 @@ def Get_Contacts(app, request):
         ans = 1
         result = jsonize(cursor, contacts_table)
     return app.response_class(response=json.dumps({"answer": ans, "result": result}), mimetype='application/json')
-
+"""
 def Input_Information(app, request):
     global request_count
     request_count += 1
@@ -338,7 +361,7 @@ def Input_Alert(app, request):#1 for alert, 0 for no alert ###### notify the app
     conn = get_db_connection()
     cursor = conn.cursor(buffered=True)
     
-    user_query = f"SELECT id, first_name, last_name FROM users WHERE crypted_mac = '{crypted_mac}';"
+    user_query = f"SELECT id, first_name, last_name, contact1, contact2, contact3 FROM users WHERE crypted_mac = '{crypted_mac}';"
     cursor.execute(user_query)
     user_row = cursor.fetchone()
 
@@ -346,17 +369,10 @@ def Input_Alert(app, request):#1 for alert, 0 for no alert ###### notify the app
         user_id = user_row[0]
         user_first_name = user_row[1]
         user_last_name = user_row[2]
-        cursor.execute(f"SELECT email FROM contacts WHERE id = {user_id}")#the table
-        if cursor.rowcount != 0:
-            contacts_table = cursor.fetchall()
-            send_email(contacts_table, user_first_name, user_last_name)
-            logger.debug("Emails were sent successfuly", extra={"request_count": request_count})
-            ans = 1
-        else:
-            logger.error("Server encountered an error ! couldn't find contacts for this user", extra={"request_count": request_count})
-            ans = 0
-            return app.response_class(response=json.dumps({"answer": ans, "result": "Server encountered an error ! couldn't find contacts for this user"}),status = 401, mimetype='application/json')
-
+        emails = user_row[3:5]
+        send_email(emails, user_first_name, user_last_name)
+        logger.debug("Emails were sent successfuly", extra={"request_count": request_count})
+        ans = 1
     else:
         logger.error("Server encountered an error ! couldn't find the user", extra={"request_count": request_count})
         ans = 0
@@ -434,10 +450,20 @@ def Update_Information(app, request):#1 if there was a change 0 if there wasn't
     id = dic["id"]
     first_name = dic["first_name"]
     last_name = dic["last_name"]
-    phone_number = dic["phone_number"]
-    #currect_dosage = dic["current_dosage"] #check if necessary
     email = dic["email"]
     password = dic["password"]
+    contacts = dic["contacts"]
+    if len(contacts) < 3:
+        contacts.append("")
+        if len(contacts) < 2:
+            contacts.append("")
+
+    print(contacts)
+    crypted_password = hashlib.sha256(password.encode()).hexdigest()
+    add_passsword = ""
+    if not password == "":
+        add_passsword = f", password = '{crypted_password}'"
+    
 
     conn = get_db_connection()
     cursor = conn.cursor(buffered=True)
@@ -445,9 +471,11 @@ def Update_Information(app, request):#1 if there was a change 0 if there wasn't
     # cursor.execute(f"""UPDATE users SET  first_name = '{first_name}', last_name = '{last_name}', 
     #                phone_number = '{phone_number}', email = '{email}', password = '{password}', current_dosage = {currect_dosage}
     #                WHERE id = {id};""")
-    cursor.execute(f"""UPDATE users SET  first_name = '{first_name}', last_name = '{last_name}', 
-                   phone_number = '{phone_number}', email = '{email}', password = '{password}'
-                   WHERE id = {id};""")
+    query = f"""UPDATE users SET  first_name = '{first_name}', last_name = '{last_name}', 
+                   email = '{email}', contact1 = '{contacts[0]}', contact2 = '{contacts[1]}', contact3 = '{contacts[2]}' """ + add_passsword + f"""
+                   WHERE id = {id};"""
+    print(query)
+    cursor.execute(query)
     if cursor.rowcount != 0:
         logger.debug("Information was updated successfuly", extra={"request_count": request_count})
         conn.commit()
@@ -491,6 +519,47 @@ def Last_dose(app, request):#returns the last dose: table if found -1 if not fou
     #return app.response_class(response=json.dumps({"answer": list_last_dose}), mimetype='application/json')
 
 
+def get_user(app, request):
+    global request_count
+    request_count += 1
+    logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'POST'), extra={"request_count": request_count})
+
+    dic = json.loads(request.data)
+    user_id = dic["id"]
+    conn = get_db_connection()
+    cursor = conn.cursor(buffered=True)
+    cursor.execute(f"SELECT * FROM users WHERE id = '{user_id}'")
+    user = cursor.fetchone()
+    user = jsonize(cursor, user)
+    cursor.close()
+    conn.close()
+    print(user)
+    return app.response_class(response=json.dumps({"answer": 1, "user": user}), mimetype='application/json')
+
+
+def get_doses_history(app, request):
+    global request_count
+    request_count += 1
+    logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'POST'), extra={"request_count": request_count})
+
+    dic = json.loads(request.data)
+    user_id = dic["id"]
+    conn = get_db_connection()
+    cursor = conn.cursor(buffered=True)
+    cursor.execute(f"SELECT * FROM dosages WHERE user_id = {user_id} order by date_time desc")
+    doses = cursor.fetchall()
+    doses = jsonize(cursor, doses)
+    ret = []
+    for dose in doses:
+        print(dose)
+        dose["date_time"] = dose["date_time"].strftime("%d-%m-%Y %H:%M") # change it back to application format
+        date, time = dose["date_time"].split(" ")
+        ret.append({"dosage":dose["dosage"], "date":date, "time":time})
+    cursor.close()
+    conn.close()
+    print(ret)
+    return app.response_class(response=json.dumps({"answer": 1, "doses": ret}), mimetype='application/json')
+
 def Input_Dose(app, request):
     global request_count
     request_count += 1
@@ -507,7 +576,7 @@ def Input_Dose(app, request):
     conn = get_db_connection()
     cursor = conn.cursor(buffered=True)
     
-    record =(user_id, dosage, formated_date)
+    record = (user_id, dosage, formated_date)
     sql = f"insert into dosages (user_id, dosage, date_time) values (%s, %s, %s)"
     cursor.execute(sql, record)
     check = cursor.rowcount
@@ -536,7 +605,7 @@ def Login(app, request):
 
     conn = get_db_connection()
     cursor = conn.cursor(buffered=True)
-    cursor.execute(f"SELECT * FROM users WHERE email = '{email}'")
+    cursor.execute(f"SELECT * FROM users WHERE email = '{email}' AND password = '{crypted_password}'")
     if cursor.rowcount != 0:
         logger.debug("User was found successfuly", extra={"request_count": request_count})
         user = cursor.fetchone()
