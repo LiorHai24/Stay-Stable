@@ -446,7 +446,15 @@ const getLast30DosageCounts = () => {
     barColors: ['#dfe4ea', '#ced6e0', '#a4b0be'],
   };
 
-  const chartConfig = {
+  const chart1Config = {
+    backgroundGradientFrom: '#F7F3E7',
+    backgroundGradientTo: '#F7F3E7',
+    decimalPlaces: 0,
+    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    contentInset: { left: 30 },
+    formatYLabel: value => value.toFixed(0)
+  };
+  const chart2Config = {
     backgroundGradientFrom: '#F7F3E7',
     backgroundGradientTo: '#F7F3E7',
     decimalPlaces: 0,
@@ -455,14 +463,16 @@ const getLast30DosageCounts = () => {
     formatYLabel: value => value.toFixed(0)
   };
 
-  const legend = ['L1', 'L2', 'L3'];
-  const legendColors = ['#dfe4ea', '#ced6e0', '#a4b0be'];
+
+  const legend = ['Taking 1', 'Taking 2', 'Taking 3', 'Taking 4'];
+  const legendColors = ['#dfe4ea', '#ced6e0', '#a4b0be',  '#a4b0be'];
   const screenWidth = Dimensions.get('window').width -20;
 
   const commitsData = [last30Counts, last30Days]
 
 return (
-  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F7F3E7' }}>
+<ScrollView style={styles.ScrollViewStyle}>
+  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F7F3E7', paddingTop: 100 }}>
     <View style={{ flexDirection: 'row' }}>
       {legend.map((item, index) => (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }} key={index}>
@@ -471,23 +481,24 @@ return (
         </View>
       ))}
     </View>
-    <View style={{marginLeft: 100}}>
+    <View style={{marginLeft: 75}}>
     <StackedBarChart
       style={{ marginVertical: 8, marginLeft: 10 }} 
       data={data}
       width={screenWidth}
       height={250}
-      chartConfig={chartConfig}
+      chartConfig={chart1Config}
     />
 	<ContributionGraph
  		values={commitsData}
   		endDate={new Date(moment().format('DD-MM-YYYY'))}
-  		numDays={105}
+  		numDays={106}
   		width={300}
   		height={220}
-  		chartConfig={chartConfig}/>
+  		chartConfig={chart2Config}/>
     </View>
   </View>
+  </ScrollView>
 );
 }
 
@@ -528,7 +539,7 @@ function AllPrevDosesScreen({ navigation }) {
 			<ScrollView style={styles.ScrollViewStyle}>
 				{prevDoses.map((prevDose, index) => (
 					<View key={index} style={styles.containerRow}>
-						<Text style={styles.labelRow}>{index + 1})</Text>
+						<Text style={styles.labelRow}>{index + 1}</Text>
 						<View>
 							<Text style={styles.labelRow}>Dosage:</Text>
 							<Text style={styles.textRow}>{prevDose.dosage}</Text>
