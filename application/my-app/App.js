@@ -19,6 +19,14 @@ import {
 	SafeAreaView,
 	Alert,
 } from "react-native";
+import {
+	LineChart,
+	BarChart,
+	PieChart,
+	ProgressChart,
+	ContributionGraph,
+	StackedBarChart,
+} from "react-native-chart-kit";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import moment from "moment";
 import { useState, useEffect } from "react";
@@ -27,6 +35,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { GiftedChat } from "react-native-gifted-chat";
 import { Ionicons } from "@expo/vector-icons";
 import Video from "react-native-video";
+
 /*<TouchableOpacity onPress={() => setVideoUrl(require("'./assets/symptoms.mp4'"))} style={styles.button}>
           <Text style={styles.buttonText}>Info</Text>
         </TouchableOpacity>*/
@@ -365,17 +374,153 @@ function NewDoseScreen({ navigation }) {
 
 // *********************************************************************************************************************
 function RecommendationsForDosageScreen({ navigation }) {
+	//this gragh is for doses taken in each day
+	//the x in the graph (labels) are the last 7 days
+	// the y is for dosage each time
+	const [prevDoses, setPrevDoses] = useState([]);
+	const isFocused = useIsFocused();
+	useFocusEffect(
+		React.useCallback(() => {
+			const payload = {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ id: global.user_id }),
+			};
+
+			console.log("here");
+			fetch("http://34.233.185.82:3306/week_history", payload)
+				.then((response) => response.json())
+				.then((data) => {
+					console.log(data);
+					console.log("here");
+					data = data.doses;
+					setPrevDoses(data);
+				})
+				.catch((error) => console.error(error));
+		}, [])
+	);
+
+	// Extracting the list of dates
+	const dates = prevDoses.map((item) => item.date);
+	console.log("Dates:", dates);
+
+	// Extracting the list of dosages
+	const dosages = prevDoses.map((item) => item.dosages);
+	console.log("Dosages:", dosages);
+
+	// Extracting the list of dosage counts
+	const dosageCounts = prevDoses.map((item) => item.dosage_count);
+	console.log("Dosage Counts:", dosageCounts);
+
+	const getLast7Days = () => {
+		const last7Dates = dates.slice(-7);
+		return last7Dates;
+	};
+
+	const getLast7DaysDosages = () => {
+		const last7Dosages = dosages.slice(-7);
+		return last7Dosages;
+	};
+
+	const getLast30DosageCounts = () => {
+		const last30Counts = dosageCounts.slice(-30);
+		return last30Counts;
+	};
+
+	const labels = getLast7Days();
+	const dosagesData = getLast7DaysDosages();
+
+	const getLast30DosageCountsAndDays = () => {
+		const last30Counts = dosageCounts.slice(-30);
+		const last30Days = dates.slice(-30);
+		return [last30Counts, last30Days];
+	};
+
+	const [last30Counts, last30Days] = getLast30DosageCountsAndDays();
+
+	const data = {
+		labels: labels,
+		data: dosagesData,
+		barColors: ["#dfe4ea", "#ced6e0", "#a4b0be"],
+	};
+
+	const chart1Config = {
+		backgroundGradientFrom: "#F7F3E7",
+		backgroundGradientTo: "#F7F3E7",
+		decimalPlaces: 0,
+		color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+		contentInset: { left: 30 },
+		formatYLabel: (value) => value.toFixed(0),
+	};
+	const chart2Config = {
+		backgroundGradientFrom: "#F7F3E7",
+		backgroundGradientTo: "#F7F3E7",
+		decimalPlaces: 0,
+		color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+		contentInset: { left: 30 },
+		formatYLabel: (value) => value.toFixed(0),
+	};
+
+	const legend = ["Taking 1", "Taking 2", "Taking 3", "Taking 4"];
+	const legendColors = ["#dfe4ea", "#ced6e0", "#a4b0be", "#a4b0be"];
+	const screenWidth = Dimensions.get("window").width - 20;
+
+	const commitsData = [last30Counts, last30Days];
+
 	return (
-		<View
-			style={{
-				flex: 1,
-				alignItems: "center",
-				justifyContent: "center",
-				backgroundColor: "#F7F3E7",
-			}}
-		>
-			<Text style={styles.recommendation}>Your new Recommendation is:</Text>
-		</View>
+		<ScrollView style={styles.ScrollViewStyle}>
+			<View
+				style={{
+					flex: 1,
+					alignItems: "center",
+					justifyContent: "center",
+					backgroundColor: "#F7F3E7",
+					paddingTop: 100,
+				}}
+			>
+				<View style={{ flexDirection: "row" }}>
+					{legend.map((item, index) => (
+						<View
+							style={{
+								flexDirection: "row",
+								alignItems: "center",
+								marginRight: 10,
+							}}
+							key={index}
+						>
+							<View
+								style={{
+									width: 10,
+									height: 10,
+									backgroundColor: legendColors[index],
+									marginRight: 5,
+								}}
+							/>
+							<Text>{item}</Text>
+						</View>
+					))}
+				</View>
+				<View style={{ marginLeft: 75 }}>
+					<StackedBarChart
+						style={{ marginVertical: 8, marginLeft: 10 }}
+						data={data}
+						width={screenWidth}
+						height={250}
+						chartConfig={chart1Config}
+					/>
+					<ContributionGraph
+						values={commitsData}
+						endDate={new Date(moment().format("DD-MM-YYYY"))}
+						numDays={106}
+						width={300}
+						height={220}
+						chartConfig={chart2Config}
+					/>
+				</View>
+			</View>
+		</ScrollView>
 	);
 }
 
@@ -415,7 +560,7 @@ function AllPrevDosesScreen({ navigation }) {
 			<ScrollView style={styles.ScrollViewStyle}>
 				{prevDoses.map((prevDose, index) => (
 					<View key={index} style={styles.containerRow}>
-						<Text style={styles.labelRow}>{index + 1})</Text>
+						<Text style={styles.labelRow}>{index + 1}</Text>
 						<View>
 							<Text style={styles.labelRow}>Dosage:</Text>
 							<Text style={styles.textRow}>{prevDose.dosage}</Text>

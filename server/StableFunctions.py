@@ -4,9 +4,11 @@ from flask import json
 from datetime import datetime ,timedelta
 import logging
 import os
+from twilio.rest import Client
 import hashlib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import re
 #import sys
 
 if not os.path.exists('logs'):#creation of logs folder
@@ -37,10 +39,11 @@ config = {
 def get_db_connection():
     return mysql.connector.connect(**config)
 
+
 def send_email(table, first_name, last_name):
     # Set up the SMTP server
     smtp_server = 'smtp.gmail.com'
-    smtp_port = 587 #2525 587 465 25 matan said 443
+    smtp_port = 587
     smtp_username = 'staystayble1@gmail.com'
     smtp_password = r'fztwumxbosycttno'
     smtp_connection = smtplib.SMTP(smtp_server, smtp_port)
@@ -67,13 +70,18 @@ def send_email(table, first_name, last_name):
     # Close the SMTP connection
     smtp_connection.quit()
 def jsonize(cursor, result):
-    row_headers=[x[0] for x in cursor.description] #this will extract row headers
-    json_data=[]
-    for result in result:
-        json_data.append(dict(zip(row_headers,result)))
-    return json.dumps(json_data)
+    if type(result) is not list:
+        row_headers = [x[0] for x in cursor.description] #this will extract row headers
+        return dict(zip(row_headers,result))
+    else:#result is a list
+        row_headers=[x[0] for x in cursor.description] #this will extract row headers
+        json_data=[]
+        for result in result:
+            json_data.append(dict(zip(row_headers,result)))
+        return json_data
+    
 
-def route_test(request):
+def route_test(app, request):
     global request_count
     request_count += 1
     logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
@@ -82,7 +90,7 @@ def route_test(request):
     print(response)
     return response
 
-def Get_Vibrations(request):
+def Get_Vibrations(app, request):
     global request_count
     request_count += 1
     logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
@@ -92,11 +100,11 @@ def Get_Vibrations(request):
     time_to_get = dic['time_to_get']
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(buffered=True)
     mac_query = f"SELECT crypted_mac FROM users WHERE id = {id}"
     cursor.execute(mac_query)
     if cursor.rowcount != 0:
-        crypted_mac = cursor.fetchall()[0]
+        crypted_mac = cursor.fetchone()
         get_information_of_user = f""" SELECT dosage_id, date_time FROM vibrations WHERE id = '{crypted_mac}' AND  time_to_get >= '{time_to_get}'"""
         cursor.execute(get_information_of_user)
         result_users = cursor.fetchall()
@@ -107,59 +115,106 @@ def Get_Vibrations(request):
             ans = 1
         else:
             logger.error("vibrations were not found", extra={"request_count": request_count})
-            return 0
-        if ans:
-            return jsonize(cursor, result_users)
+            ans = 0
+            result = "None"
+        
     else:
         logger.error("Server encountered an error ! couldn't find user", extra={"request_count": request_count})
-        return 0 # if the user is not in the database   
+        ans = 0 # if the user is not in the database 
+        result = "None"
+    if ans:
+        result = jsonize(cursor, result_users)
+    return app.response_class(response=json.dumps({"answer": ans, "result": result}), mimetype='application/json')
 
     
 
-def New_User(request):
+def New_User(app, request):##- with mac
     global request_count
     request_count += 1
     logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
+
+    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
 
     dic = json.loads(request.data)
     mac = dic["mac"]
     first_name = dic["first_name"]
     last_name = dic["last_name"]
-    phone_number = dic["phone_number"]
-    currect_dosage = dic["current_dosage"]
-    email = dic["email"]
+    age = dic["age"]
+    medicine_name = dic["medicine_name"]
+    email = dic["email"].lower()
+    contacts = dic["contacts"]
+    contact1, contact2, contact3 = "" , "" , ""
+    length = len(contacts)
+    if length >= 1:
+        contact1 = contacts[0]
+        if length >= 2:
+            contact2 = contacts[1]
+            if length >= 3:
+                contact3 = contacts[2]
+    if not re.fullmatch(regex, email):
+        logger.error("Server encountered an error ! Invalid Email", extra={"request_count": request_count})
+        result = "Server encountered an error ! Invalid Email"
+        Status = 406
+        ans = 0
+        return app.response_class(response=json.dumps({"answer": ans, "result": result}), mimetype='application/json', status = Status)
+    
+    for c in contacts:
+        if not re.fullmatch(regex, c):
+            logger.error("Server encountered an error ! Invalid Email", extra={"request_count": request_count})
+            result = "Server encountered an error ! Invalid Email"
+            Status = 406
+            ans = 0
+            return app.response_class(response=json.dumps({"answer": ans, "result": result}), mimetype='application/json', status = Status)
+        
+
     password = dic["password"]
 
-    # Create a cursor object to execute SQL queries
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Define a record to insert
+    crypted_password = hashlib.sha256(password.encode()).hexdigest()
     crypted_mac = hashlib.sha256(mac.encode()).hexdigest()
-    record = (first_name, last_name, phone_number, email, password, currect_dosage, crypted_mac)
 
-    # Check if any rows were returned
-    sql = f"""INSERT INTO users (first_name, last_name, phone_number, email, password, current_dosage, crypted_mac) VALUES (%s, %s, %s, %s, %s, %s, %s)"""
-
-    cursor.execute(sql, record)
-    check = cursor.rowcount
-    if check != 0:
-        logger.debug("User added successfuly", extra={"request_count": request_count})
-        conn.commit()
-        ans = 1
-    else:
+    conn = get_db_connection()
+    cursor = conn.cursor(buffered=True)
+    query_check = f"SELECT * FROM users WHERE email = '{email}'"
+    cursor.execute(query_check)
+    if cursor.rowcount != 0:
+        logger.error("Server encountered an error ! user already exists for this email", extra={"request_count": request_count})
+        result = "Server encountered an error ! user already exists for this email"
+        Status = 400
         ans = 0
-        logger.error("Server encountered an error !", extra={"request_count": request_count})
+    else:
+        record = (first_name, last_name, age, medicine_name, email, contact1, contact2, contact3, crypted_password, crypted_mac)
+
+        # Check if any rows were returned
+        sql = f"""INSERT INTO users (first_name, last_name, age, medicine_name, email, contact1, contact2, contact3, password, crypted_mac) VALUES (%s, %s, %s, %s, %s, %s, %s ,%s, %s, %s)"""
+        cursor.execute(sql, record)
+        
+        if cursor.rowcount != 0:
+            sql = f"SELECT id FROM users WHERE email = '{email}'"
+            cursor.execute(sql)
+            id = cursor.fetchone()[0]
+            logger.debug("User added successfuly", extra={"request_count": request_count})
+            conn.commit()
+            ans = 1
+            Status = 200
+            result = id
+        else:
+            ans = 0
+            logger.error("Server encountered an error !", extra={"request_count": request_count})
+            result = "Server encountered an error !"
+            Status = 401
 
     cursor.close()
     conn.close()
-    return ans
+    return app.response_class(response=json.dumps({"answer": ans, "result": result}), mimetype='application/json', status = Status)
+
+
+        
 
 
 
 
 
-def New_Contact(request):#still need to check if only mail or other details: should change accordingly to the database
+def New_Contact(app, request):#still need to check if only mail or other details: should change accordingly to the database
     global request_count
     request_count += 1
     logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
@@ -172,7 +227,7 @@ def New_Contact(request):#still need to check if only mail or other details: sho
     id = dic["id"]
     # Create a cursor object to execute SQL queries
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(buffered=True)
         #record = (phone_number, email, id, first_name, last_name)
     record = (email, id)
 
@@ -189,12 +244,14 @@ def New_Contact(request):#still need to check if only mail or other details: sho
     else:
         ans = 0
         logger.error("Server encountered an error !", extra={"request_count": request_count})
+        return app.response_class(response=json.dumps({"answer": ans, "result": "Server encountered an error !"}),status = 401, mimetype='application/json')
+
 
     cursor.close()
     conn.close()
-    return ans
+    return app.response_class(response=json.dumps({"answer": ans}), mimetype='application/json')
 
-def Get_Contacts(request):
+"""def Get_Contacts(app, request):
     global request_count
     request_count += 1
     logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
@@ -203,26 +260,32 @@ def Get_Contacts(request):
     id = dic["id"]
     # Create a cursor object to execute SQL queries
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(buffered=True)
     # Check if any rows were returned
-    contacts_query = f"""SELECT first_name, last_name, phone_number, email FROM contacts WHERE id = '{id}'"""
+    contacts_query = fSELECT first_name, last_name, phone_number, email FROM contacts WHERE id = '{id}'
 
     cursor.execute(contacts_query)
     contacts_table = cursor.fetchall()
     if cursor.rowcount == 0:
         logger.error("Server encountered an error !", extra={"request_count": request_count})
-        return 0 # if the user has no contacts
+        ans = 0
+        result = "None"
+        return app.response_class(response=json.dumps({"answer": ans, "result": result}), mimetype='application/json', status = 401)
+        
     else:
         logger.debug("Contacts were found successfuly", extra={"request_count": request_count})
-        return jsonize(cursor, contacts_table)
-
-def Input_Information(request):
+        ans = 1
+        result = jsonize(cursor, contacts_table)
+    return app.response_class(response=json.dumps({"answer": ans, "result": result}), mimetype='application/json')
+"""
+def Input_Information(app, request):
     global request_count
     request_count += 1
     logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
 
     dic = json.loads(request.data)
     vibrations = dic["vibrations"]
+    print(vibrations)
     mac = dic["mac"]
     #
     #NEED to process the vibrations
@@ -230,7 +293,7 @@ def Input_Information(request):
 
     now = datetime.now()
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(buffered=True)
     crypted_mac = hashlib.sha256(mac.encode()).hexdigest()
     dt_string = now.strftime("%Y-%m-%d %H:%M")
     record = (crypted_mac, sum_vibrations, dt_string)
@@ -244,12 +307,14 @@ def Input_Information(request):
     else:
         ans = 0
         logger.error("Server encountered an error !", extra={"request_count": request_count})
+        return app.response_class(response=json.dumps({"answer": ans, "result": "Server encountered an error !"}),status = 401, mimetype='application/json')
+
 
     cursor.close()
     conn.close()
-    return ans
+    return app.response_class(response=json.dumps({"answer": ans}), mimetype='application/json')
 
-def Delete_Information(request):
+def Delete_Information(app, request):#1 if information was deleted, 0 if not
     global request_count
     request_count += 1
     logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
@@ -261,10 +326,10 @@ def Delete_Information(request):
     cutoff_date = datetime.now() - timedelta(days=time_to_delete)
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(buffered=True)
     get_crypted_mac = f""" SELECT crypted_mac FROM users where id = '{id}' """
     cursor.execute(get_crypted_mac)
-    result_mac = cursor.fetchall()
+    result_mac = cursor.fetchone()[0]
 
     query = f"DELETE FROM vibrations WHERE current_time < '{cutoff_date.strftime('%Y/%m/%d %H:%M')} AND id = {result_mac}';"
     cursor.execute(query)
@@ -274,16 +339,16 @@ def Delete_Information(request):
         logger.debug("All information that is older than {} days was deleted successfuly.".format(time_to_delete), extra={"request_count": request_count})
         ans = 1
     else:
-        logger.debug("There was no information suitable for this time stamp.", extra={"request_count": request_count})
+        logger.debug("There was no information suitable for this time stamp. Nothing was deleted", extra={"request_count": request_count})
         ans = 0
 
     cursor.close()
     conn.close()
-    return ans
+    return app.response_class(response=json.dumps({"answer": ans}), mimetype='application/json')
 
 
     
-def Input_Alert(request):#1 for alert, 0 for no alert
+def Input_Alert(app, request):#1 for alert, 0 for no alert ###### notify the app somehow?
     global request_count
     request_count += 1
     logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
@@ -293,46 +358,42 @@ def Input_Alert(request):#1 for alert, 0 for no alert
     crypted_mac = hashlib.sha256(mac.encode()).hexdigest()
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(buffered=True)
     
-    user_query = f"SELECT id, first_name, last_name FROM users WHERE crypted_mac = '{crypted_mac}';"
+    user_query = f"SELECT id, first_name, last_name, contact1, contact2, contact3 FROM users WHERE crypted_mac = '{crypted_mac}';"
     cursor.execute(user_query)
-    user_row = cursor.fetchall()
+    user_row = cursor.fetchone()
 
     if cursor.rowcount !=0:
-        user_id = user_row[0][0]
-        user_first_name = user_row[0][1]
-        user_last_name = user_row[0][2]
-        contacts_query = f"SELECT email FROM contacts WHERE id = {user_id}"
-        cursor.execute(contacts_query)#the table
-        if cursor.rowcount != 0:
-            contacts_table = cursor.fetchall()
-            send_email(contacts_table, user_first_name, user_last_name)
-            logger.debug("Emails were sent successfuly", extra={"request_count": request_count})
-            ans = 1
-        else:
-            logger.error("Server encountered an error ! couldn't find mail", extra={"request_count": request_count})
-            ans = 0
+        user_id = user_row[0]
+        user_first_name = user_row[1]
+        user_last_name = user_row[2]
+        emails = user_row[3:5]
+        send_email(emails, user_first_name, user_last_name)
+        logger.debug("Emails were sent successfuly", extra={"request_count": request_count})
+        ans = 1
     else:
         logger.error("Server encountered an error ! couldn't find the user", extra={"request_count": request_count})
         ans = 0
+        return app.response_class(response=json.dumps({"answer": ans, "result": "Server encountered an error ! couldn't find the user"}),status = 401, mimetype='application/json')
+        
 
     cursor.close()
     conn.close()
 
-    return ans
+    return app.response_class(response=json.dumps({"answer": ans}), mimetype='application/json')
 
-def Check_Connection(request):#returns 1 if status changed and 0 if not
+def Check_Connection(app, request):#returns 1 if status changed and 0 if not
     global request_count
     request_count += 1
     logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
-
+    print(request.data)
     dic = json.loads(request.data)
     mac = dic["mac"]
     new_status = dic["status"]
     crypted_mac = hashlib.sha256(mac.encode()).hexdigest()
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(buffered=True)
     
     cursor.execute(f"UPDATE users SET status = {new_status} WHERE crypted_mac = '{crypted_mac}'")
     if cursor.rowcount != 0:
@@ -340,13 +401,13 @@ def Check_Connection(request):#returns 1 if status changed and 0 if not
         conn.commit()
         ans = 1
     else:
-        logger.debug("Status was remained the same", extra={"request_count": request_count})#not sure what method to use
+        logger.debug("Status was remained the same", extra={"request_count": request_count})
         ans = 0
     cursor.close()
     conn.close()
-    return ans
+    return app.response_class(response=json.dumps({"answer": ans}), mimetype='application/json')
 
-def Get_Status(request):# if status is -1- code error 0- no connection, 1- connection, 2- not connection and notified
+def Get_Status(app, request):# if status is -1- code error 0- no connection, 1- connection, 2- not connection and notified
     global request_count
     request_count += 1
     logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
@@ -355,12 +416,12 @@ def Get_Status(request):# if status is -1- code error 0- no connection, 1- conne
     id = dic["id"]
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(buffered=True)
 
     cursor.execute(f"SELECT status FROM users WHERE id = {id}")
     if cursor.rowcount != 0:
         logger.debug("Status was retrieved successfuly", extra={"request_count": request_count})
-        current_status = cursor.fetchall()[0][0]
+        current_status = cursor.fetchone()[0]
 
         if current_status == 0:
             cursor.execute(f"UPDATE users SET status = {2} WHERE  id = {id}")
@@ -377,9 +438,9 @@ def Get_Status(request):# if status is -1- code error 0- no connection, 1- conne
         current_status = -1
     cursor.close()
     conn.close()
-    return current_status
+    return app.response_class(response=json.dumps({"status": current_status}), mimetype='application/json')
 
-def Update_Information(request):#1 if there was a change 0 if there wasn't
+def Update_Information(app, request):#1 if there was a change 0 if there wasn't
     global request_count
     request_count += 1
     logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
@@ -388,20 +449,32 @@ def Update_Information(request):#1 if there was a change 0 if there wasn't
     id = dic["id"]
     first_name = dic["first_name"]
     last_name = dic["last_name"]
-    phone_number = dic["phone_number"]
-    #currect_dosage = dic["current_dosage"] #check with gal if neccesary
     email = dic["email"]
     password = dic["password"]
+    contacts = dic["contacts"]
+    if len(contacts) < 3:
+        contacts.append("")
+        if len(contacts) < 2:
+            contacts.append("")
+
+    print(contacts)
+    crypted_password = hashlib.sha256(password.encode()).hexdigest()
+    add_passsword = ""
+    if not password == "":
+        add_passsword = f", password = '{crypted_password}'"
+    
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(buffered=True)
 
     # cursor.execute(f"""UPDATE users SET  first_name = '{first_name}', last_name = '{last_name}', 
     #                phone_number = '{phone_number}', email = '{email}', password = '{password}', current_dosage = {currect_dosage}
     #                WHERE id = {id};""")
-    cursor.execute(f"""UPDATE users SET  first_name = '{first_name}', last_name = '{last_name}', 
-                   phone_number = '{phone_number}', email = '{email}', password = '{password}'
-                   WHERE id = {id};""")
+    query = f"""UPDATE users SET  first_name = '{first_name}', last_name = '{last_name}', 
+                   email = '{email}', contact1 = '{contacts[0]}', contact2 = '{contacts[1]}', contact3 = '{contacts[2]}' """ + add_passsword + f"""
+                   WHERE id = {id};"""
+    print(query)
+    cursor.execute(query)
     if cursor.rowcount != 0:
         logger.debug("Information was updated successfuly", extra={"request_count": request_count})
         conn.commit()
@@ -413,10 +486,10 @@ def Update_Information(request):#1 if there was a change 0 if there wasn't
     cursor.close()
     conn.close()
 
-    return ans
+    return app.response_class(response=json.dumps({"answer": ans}), mimetype='application/json')
 
 
-def Last_dose(request):#returns the last dose: table if found -1 if not found
+def Last_dose(app, request):#returns the last dose: table if found -1 if not found
     global request_count
     request_count += 1
     logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
@@ -424,19 +497,69 @@ def Last_dose(request):#returns the last dose: table if found -1 if not found
     dic = json.loads(request.data)
     id = dic["id"]
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(f"SELECT id, date_time FROM dosages WHERE user_id = {id} order by date_time desc")#desc?
+    cursor = conn.cursor(buffered=True)
+    cursor.execute(f"SELECT dosage, date_time FROM dosages WHERE user_id = {id} order by date_time desc")#desc?
     if cursor.rowcount != 0:
+        ans = 1
         logger.debug("Last dose was retrieved successfuly", extra={"request_count": request_count})
-        last_dose = cursor.fetchall()[0]
+        tuple_last_dose = cursor.fetchone()
+        list_last_dose = list(tuple_last_dose)
+        list_last_dose[1] = list_last_dose[1].strftime("%d-%m-%Y %H:%M") # change it back to application format
+        date, time = list_last_dose[1].split(" ")
+        ret = {"dosage": list_last_dose[0], "date": date, "time": time}
+
     else:
-        logger.error("Server encountered an error ! couldn't find last dose for this id", extra={"request_count": request_count})
-        last_dose = -1
+        last_dose = "Server encountered an error ! couldn't find last dose for this id"
+        logger.error(last_dose , extra={"request_count": request_count})
+        ans = 0
+        ret = {"dosage": "not found", "date": "not found", "time": "not found"}
     cursor.close()
     conn.close()
-    return last_dose
+    return app.response_class(response=json.dumps({"answer": ans, "result": ret}), mimetype='application/json')
 
-def Input_Dose(request):
+
+def get_user(app, request):
+    global request_count
+    request_count += 1
+    logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'POST'), extra={"request_count": request_count})
+
+    dic = json.loads(request.data)
+    user_id = dic["id"]
+    conn = get_db_connection()
+    cursor = conn.cursor(buffered=True)
+    cursor.execute(f"SELECT * FROM users WHERE id = '{user_id}'")
+    user = cursor.fetchone()
+    user = jsonize(cursor, user)
+    cursor.close()
+    conn.close()
+    print(user)
+    return app.response_class(response=json.dumps({"answer": 1, "user": user}), mimetype='application/json')
+
+
+def get_doses_history(app, request):
+    global request_count
+    request_count += 1
+    logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'POST'), extra={"request_count": request_count})
+
+    dic = json.loads(request.data)
+    user_id = dic["id"]
+    conn = get_db_connection()
+    cursor = conn.cursor(buffered=True)
+    cursor.execute(f"SELECT * FROM dosages WHERE user_id = {user_id} order by date_time desc")
+    doses = cursor.fetchall()
+    doses = jsonize(cursor, doses)
+    ret = []
+    for dose in doses:
+        print(dose)
+        dose["date_time"] = dose["date_time"].strftime("%d-%m-%Y %H:%M") # change it back to application format
+        date, time = dose["date_time"].split(" ")
+        ret.append({"dosage":dose["dosage"], "date":date, "time":time})
+    cursor.close()
+    conn.close()
+    print(ret)
+    return app.response_class(response=json.dumps({"answer": 1, "doses": ret}), mimetype='application/json')
+
+def Input_Dose(app, request):
     global request_count
     request_count += 1
     logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
@@ -444,21 +567,16 @@ def Input_Dose(request):
     dic = json.loads(request.data)
     user_id = dic["id"]
     dosage = dic["dosage"]
-    date_time = dic["date_time"]
+    date = dic["date"] #format of dd/mm/yyyy
+    time = dic["time"] #format of hh:mm
+    formated_date = datetime.strptime(date, "%d-%m-%Y").strftime('%Y-%m-%d')
+    formated_date = formated_date + " " + time
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(buffered=True)
     
-    cursor.execute(f"SELECT id FROM dosages WHERE user_id = {user_id} order by date_time desc")
-    if cursor.rowcount != 0:
-        logger.debug("Last dose was retrieved successfuly", extra={"request_count": request_count})
-        last_dosage = cursor.fetchall()[0][0]
-    else:
-        logger.debug("No previous dosages were found, so starting from 1", extra={"request_count": request_count})
-        last_dosage = 0
-    last_dosage = last_dosage + 1 #for this dosage
-    record =(user_id, last_dosage, dosage, date_time)
-    sql = f"insert into dosages (user_id, id, dosage, date_time) values (%s, %s, %s, %s)"
+    record = (user_id, dosage, formated_date)
+    sql = f"insert into dosages (user_id, dosage, date_time) values (%s, %s, %s)"
     cursor.execute(sql, record)
     check = cursor.rowcount
     if check != 0:
@@ -471,5 +589,116 @@ def Input_Dose(request):
 
     cursor.close()
     conn.close()
-    return ans
+    return app.response_class(response=json.dumps({"answer": ans}), mimetype='application/json')
 
+
+def Login(app, request):
+    global request_count
+    request_count += 1
+    logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
+
+    dic = json.loads(request.data)
+    email = dic["email"].lower()
+    password = dic["password"]
+    crypted_password = hashlib.sha256(password.encode()).hexdigest()
+
+    conn = get_db_connection()
+    cursor = conn.cursor(buffered=True)
+    cursor.execute(f"SELECT * FROM users WHERE email = '{email}' AND password = '{crypted_password}'")
+    if cursor.rowcount != 0:
+        logger.debug("User was found successfuly", extra={"request_count": request_count})
+        user = cursor.fetchone()
+        user = jsonize(cursor, user)
+        if user["password"] == crypted_password:
+            logger.debug("Password was correct", extra={"request_count": request_count})
+            ans = 1
+        else:
+            logger.debug("Password was incorrect", extra={"request_count": request_count})
+            ans = 0
+            user = "None"
+    else:
+        logger.error("Server encountered an error ! couldn't find user", extra={"request_count": request_count})
+        ans = -1
+        user = "None"
+    cursor.close()
+    conn.close()
+    return app.response_class(response=json.dumps({"answer": ans, "user": user}), mimetype='application/json')
+
+
+def _(app, request):
+    global request_count
+    request_count += 1
+    logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
+
+    dic = json.loads(request.data)
+    id = dic["id"]
+
+
+    return app.response_class(response=json.dumps({"answer": ans, "user": user}), mimetype='application/json')
+
+def get_week_history(app, request):
+    global request_count
+    request_count += 1
+    logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
+
+    dic = json.loads(request.data)
+    id = dic["id"]
+
+    conn = get_db_connection()
+    cursor = conn.cursor(buffered=True)
+
+    cursor.execute(f"""SELECT DATE(date_time) AS day, COUNT(*) AS dose_count, GROUP_CONCAT(dosage SEPARATOR ' ') AS dosage
+                        FROM dosages
+                        WHERE user_id = {id}
+                        AND date_time >= DATE_SUB(NOW(), INTERVAL 1 WEEK)
+                        GROUP BY DATE(date_time);""")
+
+    if cursor.rowcount != 0:
+        logger.debug("dosages found successfuly!", extra={"request_count": request_count})
+        doses = cursor.fetchall()
+        ret=[]
+        for row in doses:
+            day = row[0].strftime("%d-%m-%Y %H:%M") # change it back to application format
+            date, time = day.split(" ")
+
+            dose_count = row[1]
+            dosage = row[2].split(" ")
+            for i in range(len(dosage)):
+                dosage[i] = int(dosage[i])
+            ret.append({"dosages":dosage, "dosage_count":dose_count, "date":date})
+        ans = 1
+    else:
+        logger.debug("dosages not found!", extra={"request_count": request_count})
+        ans = 0
+        ret = "None"
+    print(ret)
+    cursor.close()
+    conn.close()
+    return app.response_class(response=json.dumps({"answer": ans, "doses": ret}), mimetype='application/json')
+
+def reset_password(app, request):
+    global request_count
+    request_count += 1
+    logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
+
+    dic = json.loads(request.data)
+    email = dic["email"].lower()
+    password = dic["password"]
+    crypted_password = hashlib.sha256(password.encode()).hexdigest()
+
+    conn = get_db_connection()
+    cursor = conn.cursor(buffered=True)
+    cursor.execute(f"UPDATE users SET password = '{crypted_password}' WHERE email = '{email}'")
+    if cursor.rowcount != 0:
+        logger.debug("Password was updated successfuly", extra={"request_count": request_count})
+        user = "Updated"
+        conn.commit()
+        ans = 1
+    else:
+        logger.error("Server encountered an error ! couldn't update password", extra={"request_count": request_count})
+        ans = 0
+        user = "None"
+    cursor.close()
+    conn.close()
+
+    return app.response_class(response=json.dumps({"answer": ans, "user": user}), mimetype='application/json')

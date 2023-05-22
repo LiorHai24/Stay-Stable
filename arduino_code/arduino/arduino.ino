@@ -241,7 +241,7 @@ bool checkStatus(){
 void sendCheckStatus(bool check){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://172.20.10.5:3306/check_connection";
+  String serverPath = "http://172.20.10.5:3306/check_connection";//aws server ip: 
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
 
@@ -255,7 +255,7 @@ void sendCheckStatus(bool check){
   sprintf(buffer, "{\"mac\":%s, \"status\":%d}", id, int(check));
   String httpRequestData = buffer;
   // Send HTTP POST request
-  int httpResponseCode = http.POST(httpRequestData);
+  int httpResponseCode = http.PUT(httpRequestData);
   if (httpResponseCode>0) {
     Serial.print("HTTP Response code: ");
     Serial.println(httpResponseCode);
