@@ -19,6 +19,14 @@ import {
 	SafeAreaView,
 	Alert,
 } from "react-native";
+import {
+  LineChart,
+  BarChart,
+  PieChart,
+  ProgressChart,
+  ContributionGraph,
+  StackedBarChart
+} from "react-native-chart-kit";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import moment from "moment";
 import { useState, useEffect } from "react";
@@ -27,6 +35,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { GiftedChat } from "react-native-gifted-chat";
 import { Ionicons } from "@expo/vector-icons";
 import Video from "react-native-video";
+
 /*<TouchableOpacity onPress={() => setVideoUrl(require("'./assets/symptoms.mp4'"))} style={styles.button}>
           <Text style={styles.buttonText}>Info</Text>
         </TouchableOpacity>*/
@@ -365,20 +374,90 @@ function NewDoseScreen({ navigation }) {
 
 // *********************************************************************************************************************
 function RecommendationsForDosageScreen({ navigation }) {
-	return (
-		<View
-			style={{
-				flex: 1,
-				alignItems: "center",
-				justifyContent: "center",
-				backgroundColor: "#F7F3E7",
-			}}
-		>
-			<Text style={styles.recommendation}>Your new Recommendation is:</Text>
-		</View>
-	);
-}
+  //this gragh is for doses taken in each day
+  //the x in the graph (labels) are the last 7 days
+  // the y is for dosage each time
+  const getLast7Days = () => {
+    const dates = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = moment().subtract(i, 'days').format('DD-MM-YYYY');
+      dates.push(date);
+    }
+    return dates;
+  };
+  const labels = getLast7Days();
+  const data = {
+    labels: labels,
+    data: [
+      [500, 500, 500],
+      [130, 130, 160],
+      [30, 30, 60],
+      [30, 30, 60],
+      [30, 30, 60],
+      [30, 30, 60],
+      [30, 30, 60],
+    ],
+    barColors: ['#dfe4ea', '#ced6e0', '#a4b0be'],
+  };
 
+  const chartConfig = {
+    backgroundGradientFrom: '#F7F3E7',
+    backgroundGradientTo: '#F7F3E7',
+    decimalPlaces: 0,
+    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    contentInset: { left: 30 },
+    formatYLabel: value => value.toFixed(0)
+  };
+
+  const legend = ['L1', 'L2', 'L3'];
+  const legendColors = ['#dfe4ea', '#ced6e0', '#a4b0be'];
+  const screenWidth = Dimensions.get('window').width -20;
+/*
+  const commitsData = [
+    { date: "2017-01-02", count: 1 },
+    { date: "2017-01-03", count: 2 },
+    { date: "2017-01-04", count: 3 },
+    { date: "2017-01-05", count: 4 },
+    { date: "2017-01-06", count: 5 },
+    { date: "2017-01-30", count: 2 },
+    { date: "2017-01-31", count: 3 },
+    { date: "2017-03-01", count: 2 },
+    { date: "2017-04-02", count: 4 },
+    { date: "2017-03-05", count: 2 },
+    { date: "2017-02-30", count: 4 }
+  ];
+  <ContributionGraph
+  values={commitsData}
+  endDate={new Date("2017-04-01")}
+  numDays={105}
+  width={300}
+  height={220}
+  chartConfig={chartConfig}
+/>
+*/
+
+return (
+  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F7F3E7' }}>
+    <View style={{ flexDirection: 'row' }}>
+      {legend.map((item, index) => (
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }} key={index}>
+          <View style={{ width: 10, height: 10, backgroundColor: legendColors[index], marginRight: 5 }} />
+          <Text>{item}</Text>
+        </View>
+      ))}
+    </View>
+    <View style={{marginLeft: 100}}>
+    <StackedBarChart
+      style={{ marginVertical: 8, marginLeft: 10 }} 
+      data={data}
+      width={screenWidth}
+      height={250}
+      chartConfig={chartConfig}
+    />
+    </View>
+  </View>
+);
+}
 function AllPrevDosesScreen({ navigation }) {
 	const [prevDoses, setPrevDoses] = useState([]);
 	const isFocused = useIsFocused();
