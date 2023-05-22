@@ -656,20 +656,22 @@ def get_week_history(app, request):
     if cursor.rowcount != 0:
         logger.debug("dosages found successfuly!", extra={"request_count": request_count})
         doses = cursor.fetchall()
-        print(doses)
         ret=[]
         for row in doses:
-            day = row[0]
+            day = row[0].strftime("%d-%m-%Y %H:%M") # change it back to application format
+            date, time = day.split(" ")
+
             dose_count = row[1]
-            dosage = row[2]
-            ret.append(f"On {day}, you had {dose_count} doses: {dosage}")
-        #doses = jsonize(cursor, doses)
+            dosage = row[2].split(" ")
+            for i in range(len(dosage)):
+                dosage[i] = int(dosage[i])
+            ret.append({"dosages":dosage, "dosage_count":dose_count, "date":date})
         ans = 1
     else:
         logger.debug("dosages not found!", extra={"request_count": request_count})
         ans = 0
         ret = "None"
-
+    print(ret)
     cursor.close()
     conn.close()
     return app.response_class(response=json.dumps({"answer": ans, "doses": ret}), mimetype='application/json')
