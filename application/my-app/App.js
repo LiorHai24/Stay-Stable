@@ -377,26 +377,72 @@ function RecommendationsForDosageScreen({ navigation }) {
   //this gragh is for doses taken in each day
   //the x in the graph (labels) are the last 7 days
   // the y is for dosage each time
-  const getLast7Days = () => {
-    const dates = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = moment().subtract(i, 'days').format('DD-MM-YYYY');
-      dates.push(date);
-    }
-    return dates;
-  };
+  const [prevDoses, setPrevDoses] = useState([]);
+	const isFocused = useIsFocused();
+	useFocusEffect(
+		React.useCallback(() => {
+			const payload = {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ id: global.user_id }),
+			};
+
+			console.log("here");
+			fetch("http://34.233.185.82:3306/week_history", payload)
+				.then((response) => response.json())
+				.then((data) => {
+					console.log(data);
+					console.log("here");
+					data = data.doses;
+					setPrevDoses(data);
+				})
+				.catch((error) => console.error(error));
+		}, [])
+	);
+
+// Extracting the list of dates
+const dates = prevDoses.map(item => item.date);
+console.log('Dates:', dates);
+
+// Extracting the list of dosages
+const dosages = prevDoses.map(item => item.dosages);
+console.log('Dosages:', dosages);
+
+// Extracting the list of dosage counts
+const dosageCounts = prevDoses.map(item => item.dosage_count);
+console.log('Dosage Counts:', dosageCounts);
+
+const getLast7Days = () => {
+  const last7Dates = dates.slice(-7);
+  return last7Dates;
+};
+
+const getLast7DaysDosages = () => {
+  const last7Dosages = dosages.slice(-7);
+  return last7Dosages;
+};
+
+const getLast30DosageCounts = () => {
+  const last30Counts = dosageCounts.slice(-30);
+  return last30Counts;
+};
+  
   const labels = getLast7Days();
+  const dosagesData = getLast7DaysDosages()
+  
+  const getLast30DosageCountsAndDays = () => {
+	const last30Counts = dosageCounts.slice(-30);
+	const last30Days = dates.slice(-30);
+	return [last30Counts, last30Days];
+  };
+  
+  const [last30Counts, last30Days] = getLast30DosageCountsAndDays();
+
   const data = {
     labels: labels,
-    data: [
-      [500, 500, 500],
-      [130, 130, 160],
-      [30, 30, 60],
-      [30, 30, 60],
-      [30, 30, 60],
-      [30, 30, 60],
-      [30, 30, 60],
-    ],
+    data: dosagesData,
     barColors: ['#dfe4ea', '#ced6e0', '#a4b0be'],
   };
 
@@ -412,29 +458,8 @@ function RecommendationsForDosageScreen({ navigation }) {
   const legend = ['L1', 'L2', 'L3'];
   const legendColors = ['#dfe4ea', '#ced6e0', '#a4b0be'];
   const screenWidth = Dimensions.get('window').width -20;
-/*
-  const commitsData = [
-    { date: "2017-01-02", count: 1 },
-    { date: "2017-01-03", count: 2 },
-    { date: "2017-01-04", count: 3 },
-    { date: "2017-01-05", count: 4 },
-    { date: "2017-01-06", count: 5 },
-    { date: "2017-01-30", count: 2 },
-    { date: "2017-01-31", count: 3 },
-    { date: "2017-03-01", count: 2 },
-    { date: "2017-04-02", count: 4 },
-    { date: "2017-03-05", count: 2 },
-    { date: "2017-02-30", count: 4 }
-  ];
-  <ContributionGraph
-  values={commitsData}
-  endDate={new Date("2017-04-01")}
-  numDays={105}
-  width={300}
-  height={220}
-  chartConfig={chartConfig}
-/>
-*/
+
+  const commitsData = [last30Counts, last30Days]
 
 return (
   <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F7F3E7' }}>
@@ -454,10 +479,19 @@ return (
       height={250}
       chartConfig={chartConfig}
     />
+	<ContributionGraph
+ 		values={commitsData}
+  		endDate={new Date(moment().format('DD-MM-YYYY'))}
+  		numDays={105}
+  		width={300}
+  		height={220}
+  		chartConfig={chartConfig}/>
     </View>
   </View>
 );
 }
+
+
 function AllPrevDosesScreen({ navigation }) {
 	const [prevDoses, setPrevDoses] = useState([]);
 	const isFocused = useIsFocused();
