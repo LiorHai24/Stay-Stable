@@ -169,8 +169,6 @@ def New_User(app, request):##- with mac
 
     password = dic["password"]
 
-    
-
     crypted_password = hashlib.sha256(password.encode()).hexdigest()
     crypted_mac = hashlib.sha256(mac.encode()).hexdigest()
 
@@ -287,6 +285,7 @@ def Input_Information(app, request):
 
     dic = json.loads(request.data)
     vibrations = dic["vibrations"]
+    print(vibrations)
     mac = dic["mac"]
     #
     #NEED to process the vibrations
@@ -388,7 +387,7 @@ def Check_Connection(app, request):#returns 1 if status changed and 0 if not
     global request_count
     request_count += 1
     logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
-
+    print(request.data)
     dic = json.loads(request.data)
     mac = dic["mac"]
     new_status = dic["status"]
@@ -513,10 +512,10 @@ def Last_dose(app, request):#returns the last dose: table if found -1 if not fou
         last_dose = "Server encountered an error ! couldn't find last dose for this id"
         logger.error(last_dose , extra={"request_count": request_count})
         ans = 0
+        ret = {"dosage": "not found", "date": "not found", "time": "not found"}
     cursor.close()
     conn.close()
     return app.response_class(response=json.dumps({"answer": ans, "result": ret}), mimetype='application/json')
-    #return app.response_class(response=json.dumps({"answer": list_last_dose}), mimetype='application/json')
 
 
 def get_user(app, request):
@@ -636,6 +635,44 @@ def _(app, request):
 
 
     return app.response_class(response=json.dumps({"answer": ans, "user": user}), mimetype='application/json')
+
+def get_week_history(app, request):
+    global request_count
+    request_count += 1
+    logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
+
+    dic = json.loads(request.data)
+    id = dic["id"]
+
+    conn = get_db_connection()
+    cursor = conn.cursor(buffered=True)
+
+    cursor.execute(f"""SELECT DATE(date_time) AS day, COUNT(*) AS dose_count, GROUP_CONCAT(dosage SEPARATOR ' ') AS dosage
+                        FROM dosages
+                        WHERE user_id = {id}
+                        AND date_time >= DATE_SUB(NOW(), INTERVAL 1 WEEK)
+                        GROUP BY DATE(date_time);""")
+
+    if cursor.rowcount != 0:
+        logger.debug("dosages found successfuly!", extra={"request_count": request_count})
+        doses = cursor.fetchall()
+        print(doses)
+        ret=[]
+        for row in doses:
+            day = row[0]
+            dose_count = row[1]
+            dosage = row[2]
+            ret.append(f"On {day}, you had {dose_count} doses: {dosage}")
+        #doses = jsonize(cursor, doses)
+        ans = 1
+    else:
+        logger.debug("dosages not found!", extra={"request_count": request_count})
+        ans = 0
+        ret = "None"
+
+    cursor.close()
+    conn.close()
+    return app.response_class(response=json.dumps({"answer": ans, "doses": ret}), mimetype='application/json')
 
 def reset_password(app, request):
     global request_count
