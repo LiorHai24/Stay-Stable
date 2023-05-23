@@ -592,6 +592,27 @@ def Input_Dose(app, request):
     return app.response_class(response=json.dumps({"answer": ans}), mimetype='application/json')
 
 
+def get_day_info(app, request):
+    global request_count
+    request_count += 1
+    logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
+    print(request.data)
+    dic = json.loads(request.data)
+    user_id = dic["id"]
+    date = dic["date"] 
+    conn = get_db_connection()
+    cursor = conn.cursor(buffered=True)
+    
+    sql = f"SELECT dosage, TIME(date_time) FROM dosages WHERE DATE(date_time)='{date}' AND user_id={user_id}"
+    cursor.execute(sql)
+    dosages = cursor.fetchall()
+    print(dosages)
+    dosages = [(d[0], str(d[1])) if isinstance(d[1], timedelta) else d for d in dosages]
+    cursor.close()
+    conn.close()
+    return app.response_class(response=json.dumps({"dosages": dosages}), mimetype='application/json')
+
+
 def Login(app, request):
     global request_count
     request_count += 1
