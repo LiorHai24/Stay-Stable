@@ -94,6 +94,10 @@ def get_doses_history():
 def Call_week_history():
     return StableFunctions.get_week_history(app, request)
 
+@app.route('/get_day_info', methods = ['POST'])#get the last dose of a user.
+def get_day_info():
+    return StableFunctions.get_day_info(app, request)
+
 if __name__ == "__main__":
     app.run(host = "0.0.0.0", debug=False, port= Port["PORT"])
 
