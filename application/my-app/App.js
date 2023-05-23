@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Button, View, Text, Dimensions } from "react-native";
+import { Button, View, Text, Dimensions, Modal } from "react-native";
 import {
 	NavigationContainer,
 	useIsFocused,
@@ -27,6 +27,8 @@ import {
 	ContributionGraph,
 	StackedBarChart,
 } from "react-native-chart-kit";
+import { Calendar, LocaleConfig } from "react-native-calendars";
+
 import DateTimePicker from "@react-native-community/datetimepicker";
 import moment from "moment";
 import { useState, useEffect } from "react";
@@ -524,61 +526,177 @@ function RecommendationsForDosageScreen({ navigation }) {
 	);
 }
 
-function AllPrevDosesScreen({ navigation }) {
-	const [prevDoses, setPrevDoses] = useState([]);
-	const isFocused = useIsFocused();
-	useFocusEffect(
-		React.useCallback(() => {
-			const payload = {
+const CalendarScreen = () => {
+	const [selectedDate, setSelectedDate] = useState(null);
+	const [popupData, setPopupData] = useState(null);
+	const [modalVisible, setModalVisible] = useState(false);
+
+	const handleDayPress = async (day) => {
+		setSelectedDate(day.dateString);
+		try {
+			const response = await fetch("http://34.233.185.82:3306/get_day_info", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({ id: global.user_id }),
-			};
+				body: JSON.stringify({ id: global.user_id, date: day.dateString }),
+			});
+			const data = (await response.json())["dosages"];
+			setPopupData(data);
+			openModal();
+		} catch (error) {
+			console.error("Error:", error);
+			setPopupData(null);
+		}
+	};
 
-			console.log("here");
-			fetch("http://34.233.185.82:3306/get_doses_history", payload)
-				.then((response) => response.json())
-				.then((data) => {
-					data = data.doses;
-					setPrevDoses(data);
-				})
-				.catch((error) => console.error(error));
-		}, [])
-	);
+	const closeModal = () => {
+		setModalVisible(false);
+	};
+
+	const openModal = () => {
+		setModalVisible(true);
+	};
+
+	const renderPopup = () => {
+		if (!modalVisible) return null;
+
+		return (
+			<View style={styles.modalWindow}>
+				<Modal visible={modalVisible} animationType="slide" transparent>
+					<View style={stylesCalender.modalContainer}>
+						<ScrollView>
+							<Text style={stylesCalender.modalTitle}>
+								Data for {moment(selectedDate).format("MMMM D, YYYY")}
+							</Text>
+							{popupData && Array.isArray(popupData) ? (
+								<View style={stylesCalender.popupContent}>
+									{popupData.map((item, index) =>
+										Array.isArray(item) && item.length >= 2 ? (
+											<View style={stylesCalender.popupItem}>
+												<Text key={index}>{`${index + 1}) dosage: ${
+													item[0]
+												}, time: ${item[1]}`}</Text>
+											</View>
+										) : null
+									)}
+								</View>
+							) : null}
+							<Button title="Close" onPress={closeModal} />
+						</ScrollView>
+					</View>
+				</Modal>
+			</View>
+		);
+	};
 
 	return (
-		<View
-			style={{
-				flex: 1,
-				alignItems: "center",
-				justifyContent: "center",
-				backgroundColor: "#F7F3E7",
-			}}
-		>
-			<ScrollView style={styles.ScrollViewStyle}>
-				{prevDoses.map((prevDose, index) => (
-					<View key={index} style={styles.containerRow}>
-						<Text style={styles.labelRow}>{index + 1}</Text>
-						<View>
-							<Text style={styles.labelRow}>Dosage:</Text>
-							<Text style={styles.textRow}>{prevDose.dosage}</Text>
-						</View>
-						<View>
-							<Text style={styles.labelRow}>Date:</Text>
-							<Text style={styles.textRow}>{prevDose.date}</Text>
-						</View>
-						<View>
-							<Text style={styles.labelRow}>Time:</Text>
-							<Text style={styles.textRow}>{prevDose.time}</Text>
-						</View>
-					</View>
-				))}
-			</ScrollView>
+		<View style={stylesCalender.screenContainer}>
+			<Calendar
+				onDayPress={handleDayPress}
+				markedDates={{
+					[selectedDate]: { selected: true, selectedColor: "#2979FF" },
+				}}
+			/>
+			{selectedDate && (
+				<View style={styles.selectedDateContainer}>
+					<Text style={styles.selectedDateText}>
+						{moment(selectedDate).format("MMMM D, YYYY")}
+					</Text>
+				</View>
+			)}
+			{renderPopup()}
 		</View>
 	);
-}
+};
+
+const AllPrevDosesScreen = ({ navigation }) => {
+	return (
+		<View style={stylesCalender.screenContainer}>
+			<View style={stylesCalender.calendarContainer}>
+				<CalendarScreen />
+			</View>
+		</View>
+	);
+};
+
+const stylesCalender = StyleSheet.create({
+	screenContainer: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+		backgroundColor: "#fff",
+	},
+	calendarContainer: {
+		width: "90%",
+		height: "90%",
+		backgroundColor: "#eb3455",
+	},
+	container: {
+		flex: 1,
+		paddingTop: 20,
+		paddingHorizontal: 16,
+	},
+	selectedDateContainer: {
+		marginTop: 20,
+		padding: 10,
+		backgroundColor: "#f0f0f0",
+		borderRadius: 8,
+	},
+	selectedDateText: {
+		fontSize: 16,
+		fontWeight: "bold",
+		textAlign: "center",
+	},
+	overlay: {
+		flex: 1,
+		backgroundColor: "rgba(0, 0, 0, 0.5)",
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	modalWindow: {
+		backgroundColor: "#fff",
+		padding: 20,
+		borderRadius: 8,
+		paddingTop: 1000,
+		justifyContent: "center",
+		alignItems: "center",
+		flex: 1,
+	},
+	modalContainer: {
+		backgroundColor: "#fff",
+		padding: 20,
+		borderRadius: 8,
+		justifyContent: "center",
+		alignItems: "center",
+		flex: 1,
+		justifyContent: "flex-start",
+		marginTop: 50,
+	},
+	modalTitle: {
+		fontSize: 20,
+		fontWeight: "bold",
+		textAlign: "center",
+		marginBottom: 10,
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	popupContent: {
+		marginTop: 20,
+	},
+	popupItem: {
+		backgroundColor: "#f0f0f0",
+		padding: 10,
+		borderRadius: 8,
+		marginBottom: 10,
+	},
+	popupText: {
+		fontSize: 16,
+		fontWeight: "bold",
+		textAlign: "center",
+	},
+});
 
 function SettingsAndProfileScreen({ navigation }) {
 	const [fname, setFName] = useState("");
