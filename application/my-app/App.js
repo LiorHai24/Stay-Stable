@@ -152,7 +152,7 @@ function FrontHomeScreen({ navigation }) {
 					onPress={() => navigation.navigate("NewDose")}
 					style={styles.button}
 				>
-					<Text style={styles.buttonText}>Enter new dose</Text>
+				<Text style={styles.buttonText}>Enter new dose</Text>
 				</TouchableOpacity>
 			</View>
 		</View>
@@ -426,50 +426,63 @@ function RecommendationsForDosageScreen({ navigation }) {
 		return last7Dosages;
 	};
 
-	const getLast30DosageCounts = () => {
-		const last30Counts = dosageCounts.slice(-30);
-		return last30Counts;
+	const getLast90DosageCountsAndDays = () => {
+		const last90Counts = dosageCounts.slice(-90);
+		const last90Days = dates.slice(-90);
+		return [last90Counts, last90Days];
 	};
+
 
 	const labels = getLast7Days();
 	const dosagesData = getLast7DaysDosages();
 
-	const getLast30DosageCountsAndDays = () => {
-		const last30Counts = dosageCounts.slice(-30);
-		const last30Days = dates.slice(-30);
-		return [last30Counts, last30Days];
-	};
-
-	const [last30Counts, last30Days] = getLast30DosageCountsAndDays();
-
 	const data = {
 		labels: labels,
 		data: dosagesData,
-		barColors: ["#dfe4ea", "#ced6e0", "#a4b0be"],
+		barColors: ["#438C9D", "#73B8C9", "#A4D6E1", "#D1EAF0"],
 	};
+	const chartDosesConfig = {
+		backgroundGradientFrom: "#F7F3E7",
+		backgroundGradientTo: "#F7F3E7",
+		decimalPlaces: 0,
+		color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+		contentInset: { left: 30 },
+		formatYLabel: (value) => value.toFixed(0),
+		labels: {
+			angle: 45, // Specify the rotation angle here
+			fontSize: 12, // Adjust the font size as needed
+			fontWeight: 'bold', // Specify the font weight
+			fill: '#000', // Specify the label text color
+			xOffset: -5, // Adjust the horizontal offset of the labels
+			yOffset: 10, // Adjust the vertical offset of the labels
+		  },
+		};
+	
+	const [last90Counts, last90Days] = getLast90DosageCountsAndDays();
+	const formattedData = last90Days.map((day, index) => ({
+		date: day,
+		count: last90Counts[index],
+	}));	
+	const chartTimesPerDayConfig = {
+		backgroundGradientFrom: "#F7F3E7",
+		backgroundGradientTo: "#F7F3E7",
+		decimalPlaces: 0,
+		color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+		contentInset: { left: 30 },
+		formatYLabel: (value) => value.toFixed(0),
+		palette: {
+		  0: "#A9A9A9", // Grey color for count 0
+		  1: "#D1EAF0", // Teal color for count 1
+		  2: "#A4D6E1", // Teal color for count 2
+		  3: "#73B8C9", // Teal color for count 3
+		  4: "#438C9D", // Teal color for count 4
+		},
+	  };
 
-	const chart1Config = {
-		backgroundGradientFrom: "#F7F3E7",
-		backgroundGradientTo: "#F7F3E7",
-		decimalPlaces: 0,
-		color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-		contentInset: { left: 30 },
-		formatYLabel: (value) => value.toFixed(0),
-	};
-	const chart2Config = {
-		backgroundGradientFrom: "#F7F3E7",
-		backgroundGradientTo: "#F7F3E7",
-		decimalPlaces: 0,
-		color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-		contentInset: { left: 30 },
-		formatYLabel: (value) => value.toFixed(0),
-	};
 
 	const legend = ["Taking 1", "Taking 2", "Taking 3", "Taking 4"];
-	const legendColors = ["#dfe4ea", "#ced6e0", "#a4b0be", "#a4b0be"];
+	const legendColors = ["#438C9D", "#73B8C9", "#A4D6E1", "#D1EAF0"];
 	const screenWidth = Dimensions.get("window").width - 20;
-
-	const commitsData = [last30Counts, last30Days];
 
 	return (
 		<ScrollView style={styles.ScrollViewStyle}>
@@ -482,6 +495,17 @@ function RecommendationsForDosageScreen({ navigation }) {
 					paddingTop: 100,
 				}}
 			>
+			<Image
+				style={{
+					resizeMode: "center",
+					height: 220,
+					width: 300,
+				}}
+				source={require("./assets/Analytics.png")}
+			/>
+			
+			<Text style={styles.title}>Analytics</Text>
+			<Text style={styles.homeText}>Presented here analysis of your intake and tremors, in the hope that with the help of the information you will be able to adjust the dose of the medicine in the way that suits you best{"\n"}</Text>
 				<View style={{ flexDirection: "row" }}>
 					{legend.map((item, index) => (
 						<View
@@ -504,21 +528,21 @@ function RecommendationsForDosageScreen({ navigation }) {
 						</View>
 					))}
 				</View>
-				<View style={{ marginLeft: 75 }}>
+				<View style={{ marginLeft: 60, marginRight: 60  }}>
 					<StackedBarChart
 						style={{ marginVertical: 8, marginLeft: 10 }}
 						data={data}
 						width={screenWidth}
 						height={250}
-						chartConfig={chart1Config}
+						chartConfig={chartDosesConfig}
 					/>
 					<ContributionGraph
-						values={commitsData}
-						endDate={new Date(moment().format("DD-MM-YYYY"))}
-						numDays={106}
+						values={formattedData}
+						endDate= {new Date()}
+						numDays={90}
 						width={300}
 						height={220}
-						chartConfig={chart2Config}
+						chartConfig={chartTimesPerDayConfig}
 					/>
 				</View>
 			</View>
@@ -562,11 +586,11 @@ const CalendarScreen = () => {
 		if (!modalVisible) return null;
 
 		return (
-			<View style={styles.modalWindow}>
+			<View style={styles.modalWindow} >
 				<Modal visible={modalVisible} animationType="slide" transparent>
 					<View style={stylesCalender.modalContainer}>
 						<ScrollView>
-							<Text style={stylesCalender.modalTitle}>
+					<Text style={stylesCalender.modalTitle}>
 								Data for {moment(selectedDate).format("MMMM D, YYYY")}
 							</Text>
 							{popupData && Array.isArray(popupData) ? (
@@ -582,7 +606,14 @@ const CalendarScreen = () => {
 									)}
 								</View>
 							) : null}
-							<Button title="Close" onPress={closeModal} />
+							<View style={styles.buttonContainer}>
+								<TouchableOpacity
+									onPress={closeModal}
+									style={styles.button}
+								>
+								<Text style={styles.buttonText}>Close</Text>
+								</TouchableOpacity>
+							</View>
 						</ScrollView>
 					</View>
 				</Modal>
@@ -592,6 +623,14 @@ const CalendarScreen = () => {
 
 	return (
 		<View style={stylesCalender.screenContainer}>
+			<Image
+				style={{
+				resizeMode: "contain",
+				height: 300,
+				width: 350,
+				marginTop: 30,
+				}}
+			source={require("./assets/calender.png")}/>
 			<Calendar
 				onDayPress={handleDayPress}
 				markedDates={{
@@ -625,17 +664,18 @@ const stylesCalender = StyleSheet.create({
 		flex: 1,
 		alignItems: "center",
 		justifyContent: "center",
-		backgroundColor: "#fff",
+		backgroundColor: "#F7F3E7",
+
 	},
 	calendarContainer: {
 		width: "90%",
 		height: "90%",
-		backgroundColor: "#eb3455",
+		backgroundColor: "#F7F3E7",
 	},
 	container: {
 		flex: 1,
 		paddingTop: 20,
-		paddingHorizontal: 16,
+		paddingHorizontal: 16, 	
 	},
 	selectedDateContainer: {
 		marginTop: 20,
@@ -664,14 +704,20 @@ const stylesCalender = StyleSheet.create({
 		flex: 1,
 	},
 	modalContainer: {
-		backgroundColor: "#fff",
+		backgroundColor: "#F7F3E7",
 		padding: 20,
 		borderRadius: 8,
 		justifyContent: "center",
 		alignItems: "center",
 		flex: 1,
 		justifyContent: "flex-start",
-		marginTop: 50,
+		marginTop: 380,
+		marginLeft:30,
+		marginRight: 30,
+		borderWidth: 5,
+		borderColor: "#438C9D", 
+		
+		
 	},
 	modalTitle: {
 		fontSize: 20,
@@ -686,9 +732,11 @@ const stylesCalender = StyleSheet.create({
 		marginTop: 20,
 	},
 	popupItem: {
-		backgroundColor: "#f0f0f0",
+		backgroundColor: "#fff",
 		padding: 10,
 		borderRadius: 8,
+		borderColor:"#438C9D",
+		borderWidth: 2,
 		marginBottom: 10,
 	},
 	popupText: {
