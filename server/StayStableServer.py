@@ -13,7 +13,7 @@ def call_route_test():
     return StableFunctions.route_test(app, request)
 
 
-@app.route('/vibrations', methods = ['GET'])#from server to application
+@app.route('/vibrations', methods = ['POST'])#from server to application
 def Call_Get_Vibrations():
     return StableFunctions.Get_Vibrations(app, request)
     
@@ -100,6 +100,9 @@ def get_day_info():
 
 if __name__ == "__main__":
     app.run(host = "0.0.0.0", debug=False, port= Port["PORT"])
+    with open("savedata.txt", 'w') as file:
+        print("opened")
+
 
 
 #query = comes with the url and is written at the end of the url
