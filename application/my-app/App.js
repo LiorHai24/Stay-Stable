@@ -375,7 +375,7 @@ function NewDoseScreen({ navigation }) {
 }
 
 // *********************************************************************************************************************
-function RecommendationsForDosageScreen({ navigation }) {
+function AnalyticsScreen({ navigation }) {
 	//this gragh is for doses taken in each day
 	//the x in the graph (labels) are the last 7 days
 	// the y is for dosage each time
@@ -418,23 +418,50 @@ function RecommendationsForDosageScreen({ navigation }) {
 
 	const getLast7Days = () => {
 		const last7Dates = dates.slice(-7);
-		return last7Dates;
-	};
+		const last7Days = last7Dates.map(date => {
+			const [day, month, year] = date.split('-');
+		  return day;
+		});
+		console.log (last7Dates)
+		return last7Days;
+	  };
+	
+	  
+	  const getLast7DaysTheMonth = () => {
+		const last7Dates = dates.slice(-7);
+		
+		if (last7Dates.length === 0) {
+		  return null; // Return null or handle the empty array case accordingly
+		}
+		
+		const firstDate = last7Dates[0];
+		
+		if (!firstDate) {
+		  return null; // Return null or handle the undefined firstDate case accordingly
+		}
+		
+		const [day, month, year] = firstDate.split('-');
+		const monthNumber = parseInt(month, 10);
+		
+		// Create an array with the month names
+		const monthNames = [
+		  'January', 'February', 'March', 'April', 'May', 'June',
+		  'July', 'August', 'September', 'October', 'November', 'December'
+		];
+	  
+		// Return the corresponding month name based on the month number
+		return monthNames[monthNumber - 1];
+	  };
+	  
 
 	const getLast7DaysDosages = () => {
 		const last7Dosages = dosages.slice(-7);
 		return last7Dosages;
 	};
 
-	const getLast90DosageCountsAndDays = () => {
-		const last90Counts = dosageCounts.slice(-90);
-		const last90Days = dates.slice(-90);
-		return [last90Counts, last90Days];
-	};
-
-
 	const labels = getLast7Days();
 	const dosagesData = getLast7DaysDosages();
+	const month = getLast7DaysTheMonth();
 
 	const data = {
 		labels: labels,
@@ -448,38 +475,8 @@ function RecommendationsForDosageScreen({ navigation }) {
 		color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
 		contentInset: { left: 30 },
 		formatYLabel: (value) => value.toFixed(0),
-		labels: {
-			angle: 45, // Specify the rotation angle here
-			fontSize: 12, // Adjust the font size as needed
-			fontWeight: 'bold', // Specify the font weight
-			fill: '#000', // Specify the label text color
-			xOffset: -5, // Adjust the horizontal offset of the labels
-			yOffset: 10, // Adjust the vertical offset of the labels
-		  },
 		};
 	
-	const [last90Counts, last90Days] = getLast90DosageCountsAndDays();
-	const formattedData = last90Days.map((day, index) => ({
-		date: day,
-		count: last90Counts[index],
-	}));	
-	const chartTimesPerDayConfig = {
-		backgroundGradientFrom: "#F7F3E7",
-		backgroundGradientTo: "#F7F3E7",
-		decimalPlaces: 0,
-		color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-		contentInset: { left: 30 },
-		formatYLabel: (value) => value.toFixed(0),
-		palette: {
-		  0: "#A9A9A9", // Grey color for count 0
-		  1: "#D1EAF0", // Teal color for count 1
-		  2: "#A4D6E1", // Teal color for count 2
-		  3: "#73B8C9", // Teal color for count 3
-		  4: "#438C9D", // Teal color for count 4
-		},
-	  };
-
-
 	const legend = ["Taking 1", "Taking 2", "Taking 3", "Taking 4"];
 	const legendColors = ["#438C9D", "#73B8C9", "#A4D6E1", "#D1EAF0"];
 	const screenWidth = Dimensions.get("window").width - 20;
@@ -528,21 +525,14 @@ function RecommendationsForDosageScreen({ navigation }) {
 						</View>
 					))}
 				</View>
+				<Text style = {styles.homeText}>{month}</Text>
 				<View style={{ marginLeft: 60, marginRight: 60  }}>
 					<StackedBarChart
 						style={{ marginVertical: 8, marginLeft: 10 }}
 						data={data}
-						width={screenWidth}
+						width={screenWidth - 20}
 						height={250}
 						chartConfig={chartDosesConfig}
-					/>
-					<ContributionGraph
-						values={formattedData}
-						endDate= {new Date()}
-						numDays={90}
-						width={300}
-						height={220}
-						chartConfig={chartTimesPerDayConfig}
 					/>
 				</View>
 			</View>
@@ -591,16 +581,16 @@ const CalendarScreen = () => {
 					<View style={stylesCalender.modalContainer}>
 						<ScrollView>
 					<Text style={stylesCalender.modalTitle}>
-								Data for {moment(selectedDate).format("MMMM D, YYYY")}
+						 {moment(selectedDate).format("MMMM D, YYYY")}
 							</Text>
 							{popupData && Array.isArray(popupData) ? (
 								<View style={stylesCalender.popupContent}>
 									{popupData.map((item, index) =>
 										Array.isArray(item) && item.length >= 2 ? (
 											<View style={stylesCalender.popupItem}>
-												<Text key={index}>{`${index + 1}) dosage: ${
+												<Text key={index}>{`${index + 1}) Dosage: ${
 													item[0]
-												}, time: ${item[1]}`}</Text>
+												}, Time: ${item[1]}`}</Text>
 											</View>
 										) : null
 									)}
@@ -1892,8 +1882,8 @@ const Home = () => {
 				}}
 			/>
 			<Tab.Screen
-				name="Recommendations"
-				component={RecommendationsForDosageScreen}
+				name="Analytics"
+				component={AnalyticsScreen}
 				options={{
 					headerShown: false,
 					tabBarIcon: ({ color, size }) => (
@@ -1971,7 +1961,7 @@ const styles = StyleSheet.create({
 		marginTop: 5,
 		textAlign: "center",
 		borderColor: "#438C9D",
-		borderWidth: 2,
+		borderWidth: 3,
 		backgroundColor: "white",
 	},
 	title: {
