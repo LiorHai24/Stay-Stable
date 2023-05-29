@@ -9,6 +9,9 @@ import hashlib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import re
+import math
+import numpy as np
+
 #import sys
 
 if not os.path.exists('logs'):#creation of logs folder
@@ -105,7 +108,7 @@ def Get_Vibrations(app, request):
     cursor.execute(mac_query)
     if cursor.rowcount != 0:
         crypted_mac = cursor.fetchone()
-        get_information_of_user = f""" SELECT dosage_id, date_time FROM vibrations WHERE id = '{crypted_mac}' AND  time_to_get >= '{time_to_get}'"""
+        get_information_of_user = f""" SELECT * FROM vibrations WHERE id = '{crypted_mac}' AND  time_to_get >= '{time_to_get}'"""
         cursor.execute(get_information_of_user)
         result_users = cursor.fetchall()
         cursor.close()
@@ -278,6 +281,94 @@ def New_Contact(app, request):#still need to check if only mail or other details
         result = jsonize(cursor, contacts_table)
     return app.response_class(response=json.dumps({"answer": ans, "result": result}), mimetype='application/json')
 """
+
+def is_almost_straight_triangle(point1, point2, point3, threshold_degrees):
+    def calculate_angle(p1, p2, p3):
+        def dot_product(v1, v2):
+            return sum((a * b) for a, b in zip(v1, v2))
+
+        def magnitude(v):
+            return math.sqrt(sum((a * a) for a in v))
+
+        v1 = [p1[i] - p2[i] for i in range(len(p1))]
+        v2 = [p3[i] - p2[i] for i in range(len(p3))]
+
+        dot = dot_product(v1, v2)
+        mag_v1 = magnitude(v1)
+        mag_v2 = magnitude(v2)
+
+        if mag_v1 == 0 or mag_v2 == 0:
+            return None
+
+        cos_theta = dot / (mag_v1 * mag_v2)
+        angle_rad = math.acos(cos_theta)
+        angle_deg = math.degrees(angle_rad)
+        return angle_deg
+
+    angle1 = calculate_angle(point1, point2, point3)
+    angle2 = calculate_angle(point2, point3, point1)
+    angle3 = calculate_angle(point3, point1, point2)
+
+    # Check if any of the angles are close to 180 degrees
+    if angle1 is not None and abs(angle1 - 180) < threshold_degrees:
+        return True
+    if angle2 is not None and abs(angle2 - 180) < threshold_degrees:
+        return True
+    if angle3 is not None and abs(angle3 - 180) < threshold_degrees:
+        return True
+
+    return False
+
+
+def count_pairs_with_speed_c(coordinates):
+    # Count the number of pairs with speeds exceeding 4 Hz and not forming an almost straight triangle
+    ret_list = [False] * len(coordinates)
+    temp_list = list()
+    temp_list_index = list()
+    delta_time = 2.0 / len(coordinates)
+    # Print the pairs of coordinates with speeds exceeding 4 Hz
+    for i in range(len(coordinates) - 1):
+        point1 = np.array(coordinates[i])
+        point2 = np.array(coordinates[i + 1])
+        speed = calculate_speed(point1, point2) / delta_time  # Calculate the speed between the two points
+        if speed >= 4.0 and speed <= 6.0:
+            temp_list.append([point1, point2])
+            temp_list_index.append(i)
+
+    for index, i in zip(range(len(temp_list)-1), range(len(temp_list_index)-1)):
+        ret_list[temp_list_index[i]] = not (np.array_equal(temp_list[index][1], temp_list[index+1][0]) and is_almost_straight_triangle(temp_list[index][0], temp_list[index][1], temp_list[index+1][1], 15))
+    
+    if len(temp_list_index)-1 > 0:
+        ret_list[temp_list_index[-1]] = True
+    return ret_list
+
+
+def calculate_speed(point1, point2):
+    # Calculate the speed between two 3D coordinates (points)
+    # Replace this with your own calculation based on the coordinate values
+    # For example, you can calculate the Euclidean distance or any other suitable method
+    return np.linalg.norm(point2 - point1)  # Example: Using Euclidean distance as the speed
+
+def count_coordinates_with_speed(vibrations):
+    my_list = count_pairs_with_speed_c(vibrations)
+    encode = encode_bool_list_to_int(my_list)
+    return encode, len(my_list)        
+
+
+def encode_bool_list_to_int(bool_list):
+    encoded_int = 0
+    for i, value in enumerate(bool_list):
+        if value:
+            encoded_int |= (1 << i)
+    return encoded_int
+
+def decode_int_to_bool_list(encoded_int, length):
+    bool_list = []
+    for i in range(length):
+        bool_list.append((encoded_int & (1 << i)) != 0)
+    return bool_list
+
+
 def Input_Information(app, request):
     global request_count
     request_count += 1
@@ -285,19 +376,19 @@ def Input_Information(app, request):
 
     dic = json.loads(request.data)
     vibrations = dic["vibrations"]
-    print(vibrations)
+ 
     mac = dic["mac"]
     #
     #NEED to process the vibrations
     #for this code is saved in sum_vibrations
-
+    sum_vibrations, length = count_coordinates_with_speed(vibrations)
     now = datetime.now()
     conn = get_db_connection()
     cursor = conn.cursor(buffered=True)
     crypted_mac = hashlib.sha256(mac.encode()).hexdigest()
-    dt_string = now.strftime("%Y-%m-%d %H:%M")
-    record = (crypted_mac, sum_vibrations, dt_string)
-    sql = f"""INSERT INTO vibrations (crypted_mac, dosage_id, date_time) VALUES (%s, %s, %s)"""
+    dt_string = now.strftime("%Y-%m-%d %H:%M:%S")
+    record = (crypted_mac, dt_string, sum_vibrations, length)
+    sql = f"""INSERT INTO vibrations (crypted_mac, date_time, encrypted_value, length) VALUES (%s, %s, %s, %s)"""
     cursor.execute(sql, record)
     check = cursor.rowcount
     if check != 0:
@@ -309,10 +400,12 @@ def Input_Information(app, request):
         logger.error("Server encountered an error !", extra={"request_count": request_count})
         return app.response_class(response=json.dumps({"answer": ans, "result": "Server encountered an error !"}),status = 401, mimetype='application/json')
 
-
+    
     cursor.close()
     conn.close()
+
     return app.response_class(response=json.dumps({"answer": ans}), mimetype='application/json')
+
 
 def Delete_Information(app, request):#1 if information was deleted, 0 if not
     global request_count
