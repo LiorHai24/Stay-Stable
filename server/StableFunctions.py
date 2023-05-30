@@ -96,7 +96,7 @@ def route_test(app, request):
 def Get_Vibrations(app, request):
     global request_count
     request_count += 1
-    logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'GET'), extra={"request_count": request_count})
+    logger.info("Incoming request | #{} | resource: {} | HTTP Verb {}".format(request_count, '/logs/level', 'POST'), extra={"request_count": request_count})
 
     dic = json.loads(request.data)
     id = dic['id']
@@ -104,13 +104,25 @@ def Get_Vibrations(app, request):
 
     conn = get_db_connection()
     cursor = conn.cursor(buffered=True)
-    mac_query = f"SELECT crypted_mac FROM users WHERE id = {id}"
+    mac_query = f"SELECT crypted_mac FROM users WHERE id={id}"
     cursor.execute(mac_query)
     if cursor.rowcount != 0:
-        crypted_mac = cursor.fetchone()
-        get_information_of_user = f""" SELECT * FROM vibrations WHERE id = '{crypted_mac}' AND  time_to_get >= '{time_to_get}'"""
+        crypted_mac = cursor.fetchone()[0]
+        
+        get_information_of_user = f""" SELECT date_time,encrypted_value,length  FROM vibrations WHERE crypted_mac='{crypted_mac}' AND date_time>='{time_to_get}' ORDER BY date_time ASC;"""
         cursor.execute(get_information_of_user)
         result_users = cursor.fetchall()
+        formatted_results = []
+        for result in result_users:
+            parsed_date = datetime.strptime(str(result[0]), "%Y-%m-%d %H:%M:%S")
+            formatted_date = parsed_date.strftime("%Y-%m-%d %H:%M:%S")
+            formatted_result = {
+                "date_time": formatted_date,
+                "value": decode_int_to_bool_list(result[1],result[2])
+            }
+            formatted_results.append(formatted_result)
+
+
         cursor.close()
         conn.close()
         if cursor.rowcount != 0:
@@ -125,9 +137,8 @@ def Get_Vibrations(app, request):
         logger.error("Server encountered an error ! couldn't find user", extra={"request_count": request_count})
         ans = 0 # if the user is not in the database 
         result = "None"
-    if ans:
-        result = jsonize(cursor, result_users)
-    return app.response_class(response=json.dumps({"answer": ans, "result": result}), mimetype='application/json')
+    
+    return app.response_class(response=json.dumps({"answer": ans, "result": formatted_results}), mimetype='application/json')
 
     
 
