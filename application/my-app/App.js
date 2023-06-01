@@ -99,9 +99,9 @@ function FrontHomeScreen({ navigation }) {
 								});
 							} else {
 								setLastDose({
-									date: "No data",
-									time: "No data",
-									dosage: "No data",
+									date: " No data",
+									time: " No data",
+									dosage: " No data",
 								});
 							}
 						});
@@ -136,15 +136,15 @@ function FrontHomeScreen({ navigation }) {
 			</Text>
 			<Text style={styles.homeText}>
 				<Ionicons name="medkit-outline" size={24} color="black" />
-				{lastDose.dosage}
+					{lastDose.dosage}
 			</Text>
 			<Text style={styles.homeText}>
 				<Ionicons name="calendar-outline" size={24} color="black" />
-				{lastDose.date}
+					{lastDose.date}
 			</Text>
 			<Text style={styles.homeText}>
 				<Ionicons name="time-outline" size={24} color="black" />
-				{lastDose.time}
+				{	lastDose.time}
 			</Text>
 
 			<View style={styles.buttonContainer}>
@@ -376,9 +376,18 @@ function NewDoseScreen({ navigation }) {
 
 // *********************************************************************************************************************
 function AnalyticsScreen({ navigation }) {
+	//1st graph
 	//this gragh is for doses taken in each day
 	//the x in the graph (labels) are the last 7 days
 	// the y is for dosage each time
+	const currentDate = new Date();
+	const lastMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, currentDate.getDate());
+	const lastMonthYear = lastMonthDate.getFullYear();
+	const lastMonthMonth = lastMonthDate.getMonth() + 1; // Note: January is represented as 0, so we add 1 to get the correct month
+	const lastMonthDay = lastMonthDate.getDate();
+	const lastMonthDateString = `${lastMonthYear}-${lastMonthMonth.toString().padStart(2, '0')}-${lastMonthDay.toString().padStart(2, '0')} 00:00:00`;
+
+	const [vibrations, setVibrations] = useState([]);
 	const [prevDoses, setPrevDoses] = useState([]);
 	const isFocused = useIsFocused();
 	useFocusEffect(
@@ -388,22 +397,29 @@ function AnalyticsScreen({ navigation }) {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({ id: global.user_id }),
+				body: JSON.stringify({ id: global.user_id, time_to_get:lastMonthDateString}),
 			};
-
-			console.log("here");
 			fetch("http://34.233.185.82:3306/week_history", payload)
 				.then((response) => response.json())
 				.then((data) => {
 					console.log(data);
-					console.log("here");
 					data = data.doses;
 					setPrevDoses(data);
+					
+					//for second graph 
+					fetch("http://34.233.185.82:3306/vibrations", payload)
+					.then((response) => response.json())
+					.then((data) => {
+					console.log(data);
+					data = data.result;
+					setVibrations(data);
 				})
 				.catch((error) => console.error(error));
+				})
 		}, [])
 	);
 
+	//for graph1
 	// Extracting the list of dates
 	const dates = prevDoses.map((item) => item.date);
 	console.log("Dates:", dates);
@@ -463,7 +479,7 @@ function AnalyticsScreen({ navigation }) {
 	const dosagesData = getLast7DaysDosages();
 	const month = getLast7DaysTheMonth();
 
-	const data = {
+	const takingsData = {
 		labels: labels,
 		data: dosagesData,
 		barColors: ["#438C9D", "#73B8C9", "#A4D6E1", "#D1EAF0"],
@@ -480,6 +496,81 @@ function AnalyticsScreen({ navigation }) {
 	const legend = ["Taking 1", "Taking 2", "Taking 3", "Taking 4"];
 	const legendColors = ["#438C9D", "#73B8C9", "#A4D6E1", "#D1EAF0"];
 	const screenWidth = Dimensions.get("window").width - 20;
+	console.log(vibrations)
+
+	// 2nd graph: shows the amount of vibrations during the day, week and month
+	const consolidatedData = {};
+	const vibrationsPerHour = [];
+
+	vibrations.forEach((entry) => {
+		const dateTimeParts = entry.date_time.split(" ");
+		const date = dateTimeParts[0]; // Extract the date part
+		const hour = dateTimeParts[1].split(":")[0]; // Extract the hour part
+	  
+		if (!consolidatedData[date]) {
+		  consolidatedData[date] = {};
+		}
+	  
+		if (!consolidatedData[date][hour]) {
+		  consolidatedData[date][hour] = [];
+		}
+	consolidatedData[date][hour] = consolidatedData[date][hour].concat(entry.value);
+	});
+	console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	console.log(consolidatedData)
+
+
+	Object.values(consolidatedData).forEach((hourData) => {
+		console.log(hourData);
+	Object.keys(hourData).forEach((hour) => {
+		const count = hourData[hour].filter((value) => value === true).length;
+		hourData[hour] = count; // Update the count for the hour
+	}); // Counts when true => means there was vibration
+	});
+	console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	console.log(consolidatedData)
+
+
+	//todays vibrations
+	const today = new Date().toISOString().split("T")[0]; // Get today's date in YYYY-MM-DD format
+	const vibrationsToday = consolidatedData.filter((count, index) => {
+	const date = new Date(vibrations[index].date_time).toISOString().split("T")[0];
+	console.log(date)
+	return date === today;
+	});
+	console.log(vibrationsToday);
+	//vibrations from the last week
+	const lastWeek = new Date();
+	lastWeek.setDate(lastWeek.getDate() - 7); // Subtract 7 days to get the date from a week ago
+	const vibrationsLastWeek = consolidatedData.filter((count, index) => {
+	const dateTime = new Date(vibrations[index].date_time);
+	return dateTime > lastWeek;
+	});
+	console.log(vibrationsLastWeek);
+	//vibrations from the last month
+	const lastMonth = new Date();
+	lastMonth.setMonth(lastMonth.getMonth() - 1); // Subtract 1 month to get the date from a month ago
+	const vibrationsLastMonth = consolidatedData.filter((count, index) => {
+	const dateTime = new Date(vibrations[index].date_time);
+	return dateTime > lastMonth;
+	});
+	console.log(vibrationsLastMonth);
+
+	const chartSequenceOfVibrationsConfig = {
+		backgroundColor: "#F7F3E7",
+		backgroundGradientFrom: "#F7F3E7",
+		backgroundGradientTo: "#F7F3E7",
+		decimalPlaces: 2,
+		labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+		style: {
+		  borderRadius: 16
+		},
+		color: (opacity = 255) => `rgba(67, 140, 157, ${opacity})`,
+		style: {
+		  borderRadius: 16,
+		},
+	  };
+
 
 	return (
 		<ScrollView style={styles.ScrollViewStyle}>
@@ -529,11 +620,43 @@ function AnalyticsScreen({ navigation }) {
 				<View style={{ marginLeft: 60, marginRight: 60  }}>
 					<StackedBarChart
 						style={{ marginVertical: 8, marginLeft: 10 }}
-						data={data}
+						data={takingsData}
 						width={screenWidth - 20}
 						height={250}
 						chartConfig={chartDosesConfig}
 					/>
+					{vibrationsToday.length !== 0 && (
+					<React.Fragment>
+						<Text style={styles.homeText}>Today's vibrations</Text>
+						<LineChart
+						data={{ datasets: [{ data: vibrationsToday }] }}
+						chartConfig={chartSequenceOfVibrationsConfig}
+						width={screenWidth - 20}
+						height={250}
+						verticalLabelRotation={30}
+						bezier
+						/>
+					</React.Fragment>
+					)}
+					  
+					<Text style = {styles.homeText}>This week's vibrations</Text>
+					<LineChart
+						data={{datasets: [{data: vibrationsLastWeek,},],}}
+						chartConfig={chartSequenceOfVibrationsConfig}
+						width={screenWidth-10}
+						height={250}
+						verticalLabelRotation={30}
+						bezier
+						/>
+					<Text style = {styles.homeText}>This month's vibrations</Text>
+					<LineChart
+						data={{datasets: [{data: vibrationsLastMonth,},],}}
+						chartConfig={chartSequenceOfVibrationsConfig}
+						width={screenWidth-20}
+						height={250}
+						verticalLabelRotation={30}
+						bezier
+						/>
 				</View>
 			</View>
 		</ScrollView>
