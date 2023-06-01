@@ -410,7 +410,6 @@ function AnalyticsScreen({ navigation }) {
 					fetch("http://34.233.185.82:3306/vibrations", payload)
 					.then((response) => response.json())
 					.then((data) => {
-					console.log(data);
 					data = data.result;
 					setVibrations(data);
 				})
@@ -446,7 +445,7 @@ function AnalyticsScreen({ navigation }) {
 	  const getLast7DaysTheMonth = () => {
 		const last7Dates = dates.slice(-7);
 		
-		if (last7Dates.length === 0) {
+		if (last7Dates !== undefined &&last7Dates.length === 0) {
 		  return null; // Return null or handle the empty array case accordingly
 		}
 		
@@ -496,65 +495,69 @@ function AnalyticsScreen({ navigation }) {
 	const legend = ["Taking 1", "Taking 2", "Taking 3", "Taking 4"];
 	const legendColors = ["#438C9D", "#73B8C9", "#A4D6E1", "#D1EAF0"];
 	const screenWidth = Dimensions.get("window").width - 20;
-	console.log(vibrations)
 
 	// 2nd graph: shows the amount of vibrations during the day, week and month
-	const consolidatedData = {};
-	const vibrationsPerHour = [];
+	const vibrationsByDate = {};
 
 	vibrations.forEach((entry) => {
-		const dateTimeParts = entry.date_time.split(" ");
-		const date = dateTimeParts[0]; // Extract the date part
-		const hour = dateTimeParts[1].split(":")[0]; // Extract the hour part
-	  
-		if (!consolidatedData[date]) {
-		  consolidatedData[date] = {};
-		}
-	  
-		if (!consolidatedData[date][hour]) {
-		  consolidatedData[date][hour] = [];
-		}
-	consolidatedData[date][hour] = consolidatedData[date][hour].concat(entry.value);
+	  const dateTimeParts = entry.date_time.split(" ");
+	  const date = dateTimeParts[0]; // Extract the date part
+	  const hour = dateTimeParts[1].split(":")[0]; // Extract the hour part
+	
+	  if (!vibrationsByDate[date]) {
+		vibrationsByDate[date] = [];
+	  }
+	
+	  let hourList = vibrationsByDate[date].find((list) => list[0] === hour);
+	  if (!hourList) {
+		hourList = [hour, 0]; // Initialize the sum of true values to 0
+		vibrationsByDate[date].push(hourList);
+	  }
+
+	  const trueCount = entry.value.filter((value) => value === true).length;
+	  hourList[1] += trueCount; // Increment the sum of true values for the hour
 	});
-	console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	console.log(consolidatedData)
+	console.log("everythinggggg");
+	console.log(vibrationsByDate);
+
+	
+// Today's vibrations
+const today = new Date().toISOString().split("T")[0]; // Get today's date in YYYY-MM-DD format
+const vibrationsToday = [];
+Object.keys(vibrationsByDate).forEach((date) => {
+  if (new Date(date).toISOString().split("T")[0] >= today) {
+    vibrationsByDate[date].forEach((hourData) => {
+		vibrationsToday.push(hourData[1]); // Push the second part as data
+    });
+  }
+});
+
+// Vibrations from the last week
+const lastWeek = new Date();
+lastWeek.setDate(lastWeek.getDate() - 7); // Subtract 7 days to get the date from a week ago
+const labelsVibrationsLastWeek = [];
+const dataVibrationsLastWeek = [];
+Object.keys(vibrationsByDate).forEach((date) => {
+  if (new Date(date) > lastWeek) {
+    vibrationsByDate[date].forEach((hourData) => {
+		labelsVibrationsLastWeek.push(hourData[0]); // Push the date as labels
+		dataVibrationsLastWeek.push(hourData[1]); // Push the second part as data
+    });
+  }
+});
 
 
-	Object.values(consolidatedData).forEach((hourData) => {
-		console.log(hourData);
-	Object.keys(hourData).forEach((hour) => {
-		const count = hourData[hour].filter((value) => value === true).length;
-		hourData[hour] = count; // Update the count for the hour
-	}); // Counts when true => means there was vibration
-	});
-	console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	console.log(consolidatedData)
-
-
-	//todays vibrations
-	const today = new Date().toISOString().split("T")[0]; // Get today's date in YYYY-MM-DD format
-	const vibrationsToday = consolidatedData.filter((count, index) => {
-	const date = new Date(vibrations[index].date_time).toISOString().split("T")[0];
-	console.log(date)
-	return date === today;
-	});
-	console.log(vibrationsToday);
-	//vibrations from the last week
-	const lastWeek = new Date();
-	lastWeek.setDate(lastWeek.getDate() - 7); // Subtract 7 days to get the date from a week ago
-	const vibrationsLastWeek = consolidatedData.filter((count, index) => {
-	const dateTime = new Date(vibrations[index].date_time);
-	return dateTime > lastWeek;
-	});
-	console.log(vibrationsLastWeek);
-	//vibrations from the last month
-	const lastMonth = new Date();
-	lastMonth.setMonth(lastMonth.getMonth() - 1); // Subtract 1 month to get the date from a month ago
-	const vibrationsLastMonth = consolidatedData.filter((count, index) => {
-	const dateTime = new Date(vibrations[index].date_time);
-	return dateTime > lastMonth;
-	});
-	console.log(vibrationsLastMonth);
+// Vibrations from the last month
+const lastMonth = new Date();
+lastMonth.setMonth(lastMonth.getMonth() - 1); // Subtract 1 month to get the date from a month ago
+const vibrationsLastMonth = [];
+Object.keys(vibrationsByDate).forEach((date) => {
+  if (new Date(date) > lastMonth) {
+    vibrationsByDate[date].forEach((hourData) => {
+      vibrationsLastMonth.push(hourData[1]);
+    });
+  }
+});
 
 	const chartSequenceOfVibrationsConfig = {
 		backgroundColor: "#F7F3E7",
@@ -625,23 +628,20 @@ function AnalyticsScreen({ navigation }) {
 						height={250}
 						chartConfig={chartDosesConfig}
 					/>
-					{vibrationsToday.length !== 0 && (
-					<React.Fragment>
-						<Text style={styles.homeText}>Today's vibrations</Text>
-						<LineChart
+					<Text style={styles.homeText}>Today's vibrations</Text>
+					{vibrationsToday && (
+					<LineChart
 						data={{ datasets: [{ data: vibrationsToday }] }}
 						chartConfig={chartSequenceOfVibrationsConfig}
 						width={screenWidth - 20}
 						height={250}
 						verticalLabelRotation={30}
 						bezier
-						/>
-					</React.Fragment>
+					/>
 					)}
-					  
 					<Text style = {styles.homeText}>This week's vibrations</Text>
 					<LineChart
-						data={{datasets: [{data: vibrationsLastWeek,},],}}
+						data={{datasets: [{data: dataVibrationsLastWeek,},],}}
 						chartConfig={chartSequenceOfVibrationsConfig}
 						width={screenWidth-10}
 						height={250}
