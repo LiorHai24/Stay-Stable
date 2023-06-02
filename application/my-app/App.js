@@ -628,7 +628,7 @@ Object.keys(vibrationsByDate).forEach((date) => {
 						height={250}
 						chartConfig={chartDosesConfig}
 					/>
-					<Text style={styles.homeText}>Today's vibrations</Text>
+					<Text style={styles.homeText}>Today's tremors</Text>
 					{vibrationsToday && (
 					<LineChart
 						data={{ datasets: [{ data: vibrationsToday }] }}
@@ -639,7 +639,7 @@ Object.keys(vibrationsByDate).forEach((date) => {
 						bezier
 					/>
 					)}
-					<Text style = {styles.homeText}>This week's vibrations</Text>
+					<Text style = {styles.homeText}>This week's tremors</Text>
 					<LineChart
 						data={{datasets: [{data: dataVibrationsLastWeek,},],}}
 						chartConfig={chartSequenceOfVibrationsConfig}
@@ -648,7 +648,7 @@ Object.keys(vibrationsByDate).forEach((date) => {
 						verticalLabelRotation={30}
 						bezier
 						/>
-					<Text style = {styles.homeText}>This month's vibrations</Text>
+					<Text style = {styles.homeText}>This month's tremors</Text>
 					<LineChart
 						data={{datasets: [{data: vibrationsLastMonth,},],}}
 						chartConfig={chartSequenceOfVibrationsConfig}
