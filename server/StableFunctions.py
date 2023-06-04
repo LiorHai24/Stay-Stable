@@ -59,10 +59,11 @@ def send_email(table, first_name, last_name):
     subject = 'ATTENTION! A fall has been detected'
     body = f'{first_name} {last_name} fell! please check that s/he is ok?'
     for i in recipient:
-
+        if i is None or i == '':
+            continue
         msg = MIMEMultipart()
         msg['From'] = sender
-        msg['To'] = i[0]
+        msg['To'] = i
         msg['Subject'] = subject
         msg.attach(MIMEText(body, 'plain'))
 
@@ -394,10 +395,10 @@ def Input_Information(app, request):
     #for this code is saved in sum_vibrations
     sum_vibrations, length = count_coordinates_with_speed(vibrations)
     now = datetime.now()
+    dt_string = now.strftime("%Y-%m-%d %H:%M:%S")
     conn = get_db_connection()
     cursor = conn.cursor(buffered=True)
     crypted_mac = hashlib.sha256(mac.encode()).hexdigest()
-    dt_string = now.strftime("%Y-%m-%d %H:%M:%S")
     record = (crypted_mac, dt_string, sum_vibrations, length)
     sql = f"""INSERT INTO vibrations (crypted_mac, date_time, encrypted_value, length) VALUES (%s, %s, %s, %s)"""
     cursor.execute(sql, record)
@@ -476,6 +477,12 @@ def Input_Alert(app, request):#1 for alert, 0 for no alert ###### notify the app
         send_email(emails, user_first_name, user_last_name)
         logger.debug("Emails were sent successfuly", extra={"request_count": request_count})
         ans = 1
+        now = datetime.now()
+        dt_string = now.strftime("%Y-%m-%d %H:%M:%S")
+        record = (user_id, dt_string)
+        fall_query = f"INSERT INTO falls (user_id, date_time) VALUES (%s, %s);"
+        cursor.execute(fall_query, record)
+        conn.commit()
     else:
         logger.error("Server encountered an error ! couldn't find the user", extra={"request_count": request_count})
         ans = 0
@@ -703,18 +710,25 @@ def get_day_info(app, request):
     print(request.data)
     dic = json.loads(request.data)
     user_id = dic["id"]
-    date = dic["date"] 
+    date = dic["date"]
     conn = get_db_connection()
     cursor = conn.cursor(buffered=True)
     
-    sql = f"SELECT dosage, TIME(date_time) FROM dosages WHERE DATE(date_time)='{date}' AND user_id={user_id}"
-    cursor.execute(sql)
+    dosage_query = f"SELECT dosage, TIME(date_time) FROM dosages WHERE DATE(date_time)='{date}' AND user_id={user_id}"
+    cursor.execute(dosage_query)
     dosages = cursor.fetchall()
     print(dosages)
     dosages = [(d[0], str(d[1])) if isinstance(d[1], timedelta) else d for d in dosages]
+
+    fall_query = f"SELECT TIME_FORMAT(date_time, '%H:%i:%s') FROM falls WHERE DATE(date_time)='{date}' AND user_id={user_id}"
+    cursor.execute(fall_query)
+    falls = cursor.fetchall()
+    print(falls)
+    falls = [(str(f[0])) if isinstance(f[0], timedelta) else f[0] for f in falls]
+
     cursor.close()
     conn.close()
-    return app.response_class(response=json.dumps({"dosages": dosages}), mimetype='application/json')
+    return app.response_class(response=json.dumps({"dosages": dosages, "falls":falls}), mimetype='application/json')
 
 
 def Login(app, request):
