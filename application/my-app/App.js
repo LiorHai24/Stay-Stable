@@ -678,8 +678,12 @@ const CalendarScreen = () => {
 				},
 				body: JSON.stringify({ id: global.user_id, date: day.dateString }),
 			});
-			const data = (await response.json())["dosages"];
-			setPopupData(data);
+			const data = (await response.json());
+			const dosages = data.dosages;
+			const falls = data.falls;
+			console.log(dosages)
+			console.log(falls)
+			setPopupData({ dosages, falls });
 			openModal();
 		} catch (error) {
 			console.error("Error:", error);
@@ -706,20 +710,23 @@ const CalendarScreen = () => {
 					<Text style={stylesCalender.modalTitle}>
 						 {moment(selectedDate).format("MMMM D, YYYY")}
 							</Text>
-							{popupData && Array.isArray(popupData) ? (
-								<View style={stylesCalender.popupContent}>
-									{popupData.map((item, index) =>
-										Array.isArray(item) && item.length >= 2 ? (
-											<View style={stylesCalender.popupItem}>
-												<Text key={index}>{`${index + 1}) Dosage: ${
-													item[0]
-												}, Time: ${item[1]}`}</Text>
-											</View>
-										) : null
-									)}
+							{popupData.dosages.map((item, index) =>
+							Array.isArray(item) && item.length >= 2 ? (
+							<View style={stylesCalender.popupItem} key={index}>
+								<Text>{`${index + 1}) Dosage: ${item[0]}, Time: ${item[1]} `}</Text>
+							</View>
+							) : null
+						)}
+						{popupData.falls && (
+							<View>
+							{popupData.falls.map((fall, index) => (
+								<View style={stylesCalender.popupFall} key={index}>
+								<Text>Fall detected in {`${fall}`}</Text>
 								</View>
-							) : null}
-							<View style={styles.buttonContainer}>
+							))}
+							</View>
+						)}
+											<View style={styles.buttonContainer}>
 								<TouchableOpacity
 									onPress={closeModal}
 									style={styles.button}
@@ -851,6 +858,15 @@ const stylesCalender = StyleSheet.create({
 		borderColor:"#438C9D",
 		borderWidth: 2,
 		marginBottom: 10,
+	},
+	popupFall: {
+		backgroundColor: "#fff",
+		padding: 10,
+		borderRadius: 8,
+		borderColor:"#BC6665",
+		borderWidth: 2,
+		marginBottom: 10,
+		alignItems: "center",
 	},
 	popupText: {
 		fontSize: 16,
