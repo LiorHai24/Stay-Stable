@@ -721,7 +721,7 @@ const CalendarScreen = () => {
 							<View>
 							{popupData.falls.map((fall, index) => (
 								<View style={stylesCalender.popupFall} key={index}>
-								<Text>Fall detected in {`${fall}`}</Text>
+								<Text>Fall detected at {`${fall}`}</Text>
 								</View>
 							))}
 							</View>
