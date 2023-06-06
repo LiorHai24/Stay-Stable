@@ -809,7 +809,7 @@ def get_week_history(app, request):
     else:
         logger.debug("dosages not found!", extra={"request_count": request_count})
         ans = 0
-        ret = "None"
+        ret = None
     print(ret)
     cursor.close()
     conn.close()
