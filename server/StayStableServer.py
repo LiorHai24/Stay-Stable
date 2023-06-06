@@ -3,6 +3,7 @@ import StableFunctions
 from dotenv import dotenv_values
 
 Port = dotenv_values(".env")
+print(Port["PORT"])
 app = Flask(__name__)
 
 # Configure the remote MySQL server connection
