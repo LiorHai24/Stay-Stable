@@ -2134,6 +2134,13 @@ const styles = StyleSheet.create({
 		paddingVertical: 5,
 		textAlign: "center",
 	},
+    chartsText:{
+        fontSize: 16,
+		paddingHorizontal: 15,
+		paddingVertical: 5,
+		textAlign: "center",
+        color: "#438C9D",
+    },
 	container: {
 		flex: 1,
 		justifyContent: "center",
