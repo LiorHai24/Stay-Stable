@@ -36,7 +36,6 @@ import SettingsList from "react-native-settings-list";
 import { createStackNavigator } from "@react-navigation/stack";
 import { GiftedChat } from "react-native-gifted-chat";
 import { Ionicons } from "@expo/vector-icons";
-import Video from "react-native-video";
 
 // ************************************************************Home sceen*********************************************************
 function FrontHomeScreen({ navigation }) {
