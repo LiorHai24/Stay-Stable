@@ -399,11 +399,12 @@ function AnalyticsScreen({ navigation }) {
 				},
 				body: JSON.stringify({ id: global.user_id, time_to_get:lastMonthDateString}),
 			};
-			fetch("http://34.233.185.82:3306/week_history", payload)
+			fetch("http://34.233.185.82:3306/all_history", payload)
 				.then((response) => response.json())
 				.then((data) => {
-					console.log(data);
-					data = data.doses;
+					console.log("all",data);
+					data = data.dosages;
+					console.log("data.dos",data);
 					setPrevDoses(data);
 					
 					//for second graph 
@@ -417,9 +418,6 @@ function AnalyticsScreen({ navigation }) {
 				})
 		}, [])
 	);
-
-	//for graph1
-	// Extracting the list of dates
 	const dates = prevDoses.map((item) => item.date);
 	console.log("Dates:", dates);
 
@@ -430,6 +428,8 @@ function AnalyticsScreen({ navigation }) {
 	// Extracting the list of dosage counts
 	const dosageCounts = prevDoses.map((item) => item.dosage_count);
 	console.log("Dosage Counts:", dosageCounts);
+
+
 
 	const getLast7Days = () => {
 		const last7Dates = dates.slice(-7);
@@ -521,43 +521,44 @@ function AnalyticsScreen({ navigation }) {
 	console.log(vibrationsByDate);
 
 	
-// Today's vibrations
-const today = new Date().toISOString().split("T")[0]; // Get today's date in YYYY-MM-DD format
-const vibrationsToday = [];
-Object.keys(vibrationsByDate).forEach((date) => {
-  if (new Date(date).toISOString().split("T")[0] >= today) {
-    vibrationsByDate[date].forEach((hourData) => {
-		vibrationsToday.push(hourData[1]); // Push the second part as data
-    });
+/// Today's vibrations
+const vibrationsToday = vibrations ? vibrations.map((entry) => {
+	const dateTimeParts = entry.date_time.split(" ");
+	const hour = dateTimeParts[1].split(":")[0];
+	const trueCount = entry.value.filter((value) => value === true).length;
+	return trueCount;
+  }) : [];
+  
+  // Vibrations from the last week
+  const lastWeek = new Date();
+  lastWeek.setDate(lastWeek.getDate() - 7);
+  const labelsVibrationsLastWeek = [];
+  const dataVibrationsLastWeek = [];
+  if (vibrations) {
+	Object.keys(vibrationsByDate).forEach((date) => {
+	  if (new Date(date) > lastWeek) {
+		vibrationsByDate[date].forEach((hourData) => {
+		  labelsVibrationsLastWeek.push(hourData[0]);
+		  dataVibrationsLastWeek.push(hourData[1]);
+		});
+	  }
+	});
   }
-});
-
-// Vibrations from the last week
-const lastWeek = new Date();
-lastWeek.setDate(lastWeek.getDate() - 7); // Subtract 7 days to get the date from a week ago
-const labelsVibrationsLastWeek = [];
-const dataVibrationsLastWeek = [];
-Object.keys(vibrationsByDate).forEach((date) => {
-  if (new Date(date) > lastWeek) {
-    vibrationsByDate[date].forEach((hourData) => {
-		labelsVibrationsLastWeek.push(hourData[0]); // Push the date as labels
-		dataVibrationsLastWeek.push(hourData[1]); // Push the second part as data
-    });
+  
+  // Vibrations from the last month
+  const lastMonth = new Date();
+  lastMonth.setMonth(lastMonth.getMonth() - 1);
+  const vibrationsLastMonth = [];
+  if (vibrations) {
+	Object.keys(vibrationsByDate).forEach((date) => {
+	  if (new Date(date) > lastMonth) {
+		vibrationsByDate[date].forEach((hourData) => {
+		  vibrationsLastMonth.push(hourData[1]);
+		});
+	  }
+	});
   }
-});
-
-
-// Vibrations from the last month
-const lastMonth = new Date();
-lastMonth.setMonth(lastMonth.getMonth() - 1); // Subtract 1 month to get the date from a month ago
-const vibrationsLastMonth = [];
-Object.keys(vibrationsByDate).forEach((date) => {
-  if (new Date(date) > lastMonth) {
-    vibrationsByDate[date].forEach((hourData) => {
-      vibrationsLastMonth.push(hourData[1]);
-    });
-  }
-});
+  
 
 	const chartSequenceOfVibrationsConfig = {
 		backgroundColor: "#F7F3E7",
@@ -629,39 +630,62 @@ Object.keys(vibrationsByDate).forEach((date) => {
 						chartConfig={chartDosesConfig}
 					/>
 					<Text style={styles.homeText}>Today's tremors</Text>
-					{vibrationsToday && (
-					<LineChart
-						data={{ datasets: [{ data: vibrationsToday }] }}
-						chartConfig={chartSequenceOfVibrationsConfig}
-						width={screenWidth - 20}
-						height={250}
-						verticalLabelRotation={30}
-						bezier
-					/>
-					)}
+						{vibrationsToday && vibrationsToday.length > 0 ? (
+							<LineChart
+							data={{ datasets: [{ data: vibrationsToday }] }}
+							chartConfig={chartSequenceOfVibrationsConfig}
+							width={screenWidth - 20}
+							height={250}
+							verticalLabelRotation={30}
+							bezier
+							/>
+						) : (
+							<Text style={styles.chartsText}>No tremor data available for today.</Text>
+						)}
+
 					<Text style = {styles.homeText}>This week's tremors</Text>
-					<LineChart
-						data={{datasets: [{data: dataVibrationsLastWeek,},],}}
-						chartConfig={chartSequenceOfVibrationsConfig}
-						width={screenWidth-10}
-						height={250}
-						verticalLabelRotation={30}
-						bezier
-						/>
+						{dataVibrationsLastWeek && dataVibrationsLastWeek.length > 0 ? (
+							<LineChart
+							data={{ datasets: [{ data: dataVibrationsLastWeek }] }}
+							chartConfig={chartSequenceOfVibrationsConfig}
+							width={screenWidth - 10}
+							height={250}
+							verticalLabelRotation={30}
+							bezier
+							/>
+						) : (
+							<Text style={styles.chartsText}>No tremor data available for this week.</Text>
+						)}
 					<Text style = {styles.homeText}>This month's tremors</Text>
-					<LineChart
-						data={{datasets: [{data: vibrationsLastMonth,},],}}
-						chartConfig={chartSequenceOfVibrationsConfig}
-						width={screenWidth-20}
-						height={250}
-						verticalLabelRotation={30}
-						bezier
-						/>
-				</View>
+						{vibrationsLastMonth && vibrationsLastMonth.length > 0 ? (
+							<LineChart
+							data={{ datasets: [{ data: vibrationsLastMonth }] }}
+							chartConfig={chartSequenceOfVibrationsConfig}
+							width={screenWidth - 20}
+							height={250}
+							verticalLabelRotation={30}
+							bezier
+							/>
+						) : (
+							<Text style={styles.chartsText}>No tremor data available for this month.</Text>
+						)}
+						</View>
 			</View>
 		</ScrollView>
 	);
 }
+
+
+
+
+
+
+
+
+
+
+
+/* ****************************** */
 
 const CalendarScreen = () => {
 	const [selectedDate, setSelectedDate] = useState(null);
@@ -679,11 +703,8 @@ const CalendarScreen = () => {
 				body: JSON.stringify({ id: global.user_id, date: day.dateString }),
 			});
 			const data = (await response.json());
-			const dosages = data.dosages;
-			const falls = data.falls;
-			console.log(dosages)
-			console.log(falls)
-			setPopupData({ dosages, falls });
+			console.log(data.list)
+			setPopupData(data.list);
 			openModal();
 		} catch (error) {
 			console.error("Error:", error);
@@ -702,43 +723,35 @@ const CalendarScreen = () => {
 	const renderPopup = () => {
 		if (!modalVisible) return null;
 
+
+	
 		return (
-			<View style={styles.modalWindow} >
-				<Modal visible={modalVisible} animationType="slide" transparent>
-					<View style={stylesCalender.modalContainer}>
-						<ScrollView>
+			<View style={styles.modalWindow}>
+			  <Modal visible={modalVisible} animationType="slide" transparent>
+				<View style={stylesCalender.modalContainer}>
+				  <ScrollView>
 					<Text style={stylesCalender.modalTitle}>
-						 {moment(selectedDate).format("MMMM D, YYYY")}
-							</Text>
-							{popupData.dosages.map((item, index) =>
-							Array.isArray(item) && item.length >= 2 ? (
-							<View style={stylesCalender.popupItem} key={index}>
-								<Text>{`${index + 1}) Dosage: ${item[0]}, Time: ${item[1]} `}</Text>
-							</View>
-							) : null
-						)}
-						{popupData.falls && (
-							<View>
-							{popupData.falls.map((fall, index) => (
-								<View style={stylesCalender.popupFall} key={index}>
-								<Text>Fall detected at {`${fall}`}</Text>
-								</View>
-							))}
-							</View>
-						)}
-											<View style={styles.buttonContainer}>
-								<TouchableOpacity
-									onPress={closeModal}
-									style={styles.button}
-								>
-								<Text style={styles.buttonText}>Close</Text>
-								</TouchableOpacity>
-							</View>
-						</ScrollView>
+					  {moment(selectedDate).format("MMMM D, YYYY")}
+					</Text>
+					{popupData.map((item, index) => (
+					  <View style={item[0] === null ? stylesCalender.popupFall : stylesCalender.popupItem} key={index}>
+						<Text>
+						  {item[0] !== null ? `Dosage: ${item[0]}, Time: ${item[1]}` : `Fall detected at ${item[1]}`}
+						</Text>
+					  </View>
+					))}
+					<View style={styles.buttonContainer}>
+					  <TouchableOpacity onPress={closeModal} style={styles.button}>
+						<Text style={styles.buttonText}>Close</Text>
+					  </TouchableOpacity>
 					</View>
-				</Modal>
+				  </ScrollView>
+				</View>
+			  </Modal>
 			</View>
-		);
+		  );
+		  
+		  
 	};
 
 	return (
@@ -874,6 +887,7 @@ const stylesCalender = StyleSheet.create({
 		textAlign: "center",
 	},
 });
+
 
 function SettingsAndProfileScreen({ navigation }) {
 	const [fname, setFName] = useState("");
