@@ -87,8 +87,8 @@ WiFiServer server(80);
 unsigned long lastTimeTimer = 0;
 unsigned long lastTimeCheck = 0;
 // Set timer to 1 minute (60000)
-unsigned long timerDelay = 2000;
-unsigned long checkDelay = 1000;
+unsigned long timerDelay = 3000;
+unsigned long checkDelay = 10000;
 void mpu_read();
 void setupMpu();
 void checkSettings();
@@ -206,8 +206,6 @@ bool checkStatus(){
   byte error, address;
   int nDevices;
  
-  Serial.println("Scanning...");
- 
   nDevices = 0;
   for(address = 1; address < 127; address++ )
   {
@@ -258,87 +256,18 @@ void sendCheckStatus(bool check){
   // Send HTTP POST request
   int httpResponseCode = http.PUT(httpRequestData);
   if (httpResponseCode>0) {
-    Serial.print("HTTP Response code: ");
-    Serial.println(httpResponseCode);
     payload = http.getString();
   }
   else {
-    Serial.print("Error code: ");
-    Serial.println(httpResponseCode);
     return;
   }
-  Serial.println(payload);
   JSONVar myObject = JSON.parse(payload);
   
   // JSON.typeof(jsonVar) can be used to get the type of the var
   if (JSON.typeof(myObject) == "undefined") {
     return;
   }
-    
-  Serial.print("JSON object = ");
-  Serial.println(myObject);
-    
-  // myObject.keys() can be used to get an array of all the keys in the object
-  JSONVar keys = myObject.keys();
-  JSONVar errorMsg = myObject[keys[0]];
-  JSONVar result = myObject[keys[1]];
-  Serial.print("error message = ");
-  Serial.println(errorMsg);
-  Serial.print("result = ");
-  Serial.println(int(result));
-  
 }
-
-void sendFallRequest(bool check){
-  WiFiClient client;
-  HTTPClient http;
-  String serverPath = "http://34.233.185.82:3306/alert";
-  // Your Domain name with URL path or IP address with path
-  http.begin(client, serverPath.c_str());
-
-  // If you need Node-RED/server authentication, insert user and password below
-  //http.setAuthorization("REPLACE_WITH_SERVER_USERNAME", "REPLACE_WITH_SERVER_PASSWORD");
-
-  String payload = "{}"; 
-  
-  http.addHeader("Content-Type", "application/json");
-  char  buffer[20];
-  sprintf(buffer, "{\"mac\":\"%s\"}", id);
-  String httpRequestData = buffer;
-  // Send HTTP POST request
-  int httpResponseCode = http.PUT(httpRequestData);
-  if (httpResponseCode>0) {
-    Serial.print("HTTP Response code: ");
-    Serial.println(httpResponseCode);
-    payload = http.getString();
-  }
-  else {
-    Serial.print("Error code: ");
-    Serial.println(httpResponseCode);
-    return;
-  }
-  Serial.println(payload);
-  JSONVar myObject = JSON.parse(payload);
-  
-  // JSON.typeof(jsonVar) can be used to get the type of the var
-  if (JSON.typeof(myObject) == "undefined") {
-    return;
-  }
-    
-  Serial.print("JSON object = ");
-  Serial.println(myObject);
-    
-  // myObject.keys() can be used to get an array of all the keys in the object
-  JSONVar keys = myObject.keys();
-  JSONVar errorMsg = myObject[keys[0]];
-  JSONVar result = myObject[keys[1]];
-  Serial.print("error message = ");
-  Serial.println(errorMsg);
-  Serial.print("result = ");
-  Serial.println(int(result));
-  
-}
-
 
 void sendFallRequest(){
   WiFiClient client;
@@ -375,19 +304,6 @@ void sendFallRequest(){
   if (JSON.typeof(myObject) == "undefined") {
     return;
   }
-    
-  Serial.print("JSON object = ");
-  Serial.println(myObject);
-    
-  // myObject.keys() can be used to get an array of all the keys in the object
-  JSONVar keys = myObject.keys();
-  JSONVar errorMsg = myObject[keys[0]];
-  JSONVar result = myObject[keys[1]];
-  Serial.print("error message = ");
-  Serial.println(errorMsg);
-  Serial.print("result = ");
-  Serial.println(int(result));
-  
 }
 
 bool sendShakingsData(){
@@ -410,136 +326,85 @@ bool sendShakingsData(){
   // Send HTTP POST request
   int httpResponseCode = http.PUT(httpRequestData);
   if (httpResponseCode>0) {
-    Serial.print("HTTP Response code: ");
-    Serial.println(httpResponseCode);
     payload = http.getString();
   }
   else {
-    Serial.print("Error code: ");
-    Serial.println(httpResponseCode);
     return false;
   }
-  Serial.println(payload);
   JSONVar myObject = JSON.parse(payload);
   
   // JSON.typeof(jsonVar) can be used to get the type of the var
   if (JSON.typeof(myObject) == "undefined") {
     return false;
   }
-    
-  Serial.print("JSON object = ");
-  Serial.println(myObject);
-    
-  // myObject.keys() can be used to get an array of all the keys in the object
-  JSONVar keys = myObject.keys();
-  JSONVar errorMsg = myObject[keys[0]];
-  JSONVar result = myObject[keys[1]];
-  Serial.print("error message = ");
-  Serial.println(errorMsg);
   return true;
 }
 
 
 
 void checkFalling(){
-     mpu_read();
- ax = (AcX-2050)/16384.00;
- ay = (AcY-77)/16384.00;
- az = (AcZ-1947)/16384.00;
- gx = (GyX+270)/131.07;
- gy = (GyY-351)/131.07;
- gz = (GyZ+136)/131.07;
- // calculating Amplitute vactor for 3 axis
- float Raw_Amp = pow(pow(ax,2)+pow(ay,2)+pow(az,2),0.5);
- int Amp = Raw_Amp * 10;  // Mulitiplied by 10 bcz values are between 0 to 1
- Serial.println(Amp);
- if (Amp<=2 && trigger2==false){ //if AM breaks lower threshold (0.4g)
-   trigger1=true;
-   }
- if (trigger1==true){
-   trigger1count++;
-   if (Amp>=12){ //if AM breaks upper threshold (3g)
-     trigger2=true;
-     trigger1=false; trigger1count=0;
+       mpu_read();
+   ax = (AcX - 2050) / 16384.00;
+   ay = (AcY - 77) / 16384.00;
+   az = (AcZ - 1947) / 16384.00;
+   gx = (GyX + 270) / 131.07;
+   gy = (GyY - 351) / 131.07;
+   gz = (GyZ + 136) / 131.07;
+   // calculating Amplitute vactor for 3 axis
+   float Raw_Amp = pow(pow(ax, 2) + pow(ay, 2) + pow(az, 2), 0.5);
+   int Amp = Raw_Amp * 10;  // Mulitiplied by 10 bcz values are between 0 to 1
+   Serial.println(Amp);
+if (Amp <= 2 && trigger2 == false) { //if AM breaks lower threshold (0.4g)     
+trigger1 = true;     
+Serial.println("TRIGGER 1 ACTIVATED");   
+}   
+if (trigger1 == true) {     
+trigger1count++;     
+if (Amp >= 12) { //if AM breaks upper threshold (3g)
+       trigger2 = true;
+       Serial.println("TRIGGER 2 ACTIVATED");
+       trigger1 = false; trigger1count = 0;
      }
- }
- if (trigger2==true){
-   trigger2count++;
-   angleChange = pow(pow(gx,2)+pow(gy,2)+pow(gz,2),0.5); Serial.println(angleChange);
-   if (angleChange>=30 && angleChange<=400){ //if orientation changes by between 80-100 degrees
-     trigger3=true; trigger2=false; trigger2count=0;
-     Serial.println(angleChange);
-       }
    }
- if (trigger3==true){
-    trigger3count++;
-    if (trigger3count>=10){ 
-       angleChange = pow(pow(gx,2)+pow(gy,2)+pow(gz,2),0.5);
+   if (trigger2 == true) {
+     trigger2count++;
+     angleChange = pow(pow(gx, 2) + pow(gy, 2) + pow(gz, 2), 0.5); Serial.println(angleChange);
+     if (angleChange >= 30 && angleChange <= 400) { //if orientation changes by between 80-100 degrees       
+trigger3 = true; trigger2 = false; trigger2count = 0;       
+Serial.println(angleChange);       
+Serial.println("TRIGGER 3 ACTIVATED");     
+}   
+}   
+if (trigger3 == true) {     
+trigger3count++;     
+if (trigger3count >= 10) {
+       angleChange = pow(pow(gx, 2) + pow(gy, 2) + pow(gz, 2), 0.5);
        //delay(10);
-       Serial.println(angleChange); 
-       if ((angleChange>=0) && (angleChange<=10)){ //if orientation changes remains between 0-10 degrees
-           fall=true; trigger3=false; trigger3count=0;
-           Serial.println(angleChange);
-             }
-       else{ //user regained normal orientation
-          trigger3=false; trigger3count=0;
-       }
-     }
-  }
- if (fall==true){ //in event of a fall detection
-   Serial.println("FALL DETECTED");
-   sendFallRequest(); 
-   fall=false;
+       Serial.println(angleChange);
+       if ((angleChange >= 0) && (angleChange <= 10)) { //if orientation changes remains between 0-10 degrees         
+fall = true; trigger3 = false; trigger3count = 0;         
+Serial.println(angleChange);       }       
+else { //user regained normal orientation         
+trigger3 = false; trigger3count = 0;         
+Serial.println("TRIGGER 3 DEACTIVATED");       
+}     
+}   
+}   
+if (fall == true) { //in event of a fall detection     
+Serial.println("FALL DETECTED"); 
+sendFallRequest();
+fall = false;   
+}   
+if (trigger2count >= 6) { //allow 0.5s for orientation change
+     trigger2 = false; trigger2count = 0;
+     Serial.println("TRIGGER 2 DECACTIVATED");
    }
- if (trigger2count>=6){ //allow 0.5s for orientation change
-   trigger2=false; trigger2count=0;
+   if (trigger1count >= 6) { //allow 0.5s for AM to break upper threshold
+     trigger1 = false; trigger1count = 0;
+     Serial.println("TRIGGER 1 DECACTIVATED");
    }
- if (trigger1count>=6){ //allow 0.5s for AM to break upper threshold
-   trigger1=false; trigger1count=0;
-   }
-  delay(100);
-}
+ }
 
-void sendResponse(){
-  String header;
-  WiFiClient client = server.available(); // Listen for incoming clients
-  header = "";
-  String currentLine = "";                // make a String to hold incoming data from the client
-  if(client){
-    Serial.println("New Client."); // print a message out in the serial port
-    while (client.connected()) { 
-      if (client.available()) {                           // If a new client connects,
-                    
-          char c = client.read();             // read a byte, then
-          Serial.write(c);                    // print it out the serial monitor
-          header += c;
-          if (c == '\n') {                    // if the byte is a newline character
-            // if the current line is blank, you got two newline characters in a row.
-            // that's the end of the client HTTP request, so send a response:
-            if (currentLine.length() == 0) {
-              // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-              // and a content-type so the client knows what's coming, then a blank line:
-              client.println("HTTP/1.1 200 OK");
-              client.println("Content-type:text/html");
-              client.println();
-              
-              if (header.indexOf("GET /MAC") >= 0) {
-                client.println(id);
-              }
-              client.stop();
-              Serial.println("Client disconnected.");
-              Serial.println("");
-            } else { // if you got a newline, then clear currentLine
-              currentLine = "";
-            }
-          } else if (c != '\r') {  // if you got anything else but a carriage return character,
-            currentLine += c;      // add it to the end of the currentLine
-          }
-        }
-      }
-    // Clear the header variable
-  } 
-}
 
 void receiveMovement(){
     float posX = 0.0, posY = 0.0, posZ = 0.0;
@@ -548,15 +413,7 @@ void receiveMovement(){
     checkFalling();
     sensors_event_t a, g, temp;
     mpu.getEvent(&a, &g, &temp);
-    /*
-    Serial.print("Acceleration X: ");
-    Serial.print(a.acceleration.x);
-    Serial.print(", Y: ");
-    Serial.print(a.acceleration.y);
-    Serial.print(", Z: ");
-    Serial.print(a.acceleration.z);
-    Serial.println();
-    */
+
     float accelX = a.acceleration.x;
     float accelY = a.acceleration.y;
     float accelZ = a.acceleration.z;
@@ -576,14 +433,6 @@ void receiveMovement(){
     posX += velX;
     posY += velY;
     posZ += velZ;
-
-    Serial.print("position X: ");
-    Serial.print(posX);
-    Serial.print(", Y: ");
-    Serial.print(posY);
-    Serial.print(", Z: ");
-    Serial.print(posZ);
-    Serial.println();
 
     // Update orientation using gyroscope data
     orientationX += gyroX * deltaTime;
@@ -617,16 +466,13 @@ void loop() {
     start = false;  
   }
   bool sent = false;
-  sendResponse();
   bool check = checkStatus();
   if ((millis() - lastTimeCheck) > checkDelay) {
-    //sendCheckStatus(check);
+    sendCheckStatus(check);
     lastTimeCheck = millis();
   }
   if(check){
     receiveMovement();
-    delay(100);
-    Serial.println();
     if ((millis() - lastTimeTimer) > timerDelay) {
       sent = sendShakingsData();
       if(sent){
