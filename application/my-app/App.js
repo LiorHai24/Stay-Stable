@@ -56,7 +56,6 @@ function FrontHomeScreen({ navigation }) {
 				body: JSON.stringify({ id: global.user_id }),
 			};
 
-			// Call GET request to the server to get the last dose
 			fetch("http://34.233.185.82:3306/last_dose", payload)
 				.then((response) => {
 					if (!response.ok) {
@@ -1137,7 +1136,8 @@ function ResetPasswordScreen({ navigation }) {
 	const route = useRoute();
 	const email = route.params.email;
 
-	const SaveChangesButtonAlert = () => {
+	const SaveChangesButtonAlert =async () => {
+		console.log("@@@@@@@@@@");
 		if (!password || !confirmPassword) {
 			Alert.alert("Error", "Please fill in both password fields");
 			return;
@@ -1152,17 +1152,18 @@ function ResetPasswordScreen({ navigation }) {
 			email: email,
 			password: password,
 		};
+		
 
-		const response = fetch("http://34.233.185.82:3306/reset_password", {
+		const response =  await fetch("http://34.233.185.82:3306/reset_password", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 			},
 			body: JSON.stringify(payload),
 		});
-
+		
 		if (response.ok) {
-			navigation.navigate("FrontHome");
+			navigation.navigate("LogInApp");
 		} 
 	};
 
@@ -1216,149 +1217,7 @@ function ResetPasswordScreen({ navigation }) {
 }
 
 
-/*
-const SaveChangesButtonAlert = () => {
-  const message = 'Changes saved!';
-  Alert.alert('Action completed', message, [
-    {
-      text: 'Edit',
-      onPress: () => console.log('Edit Pressed'),
-      style: 'Edit',
-    },
-    {
-      text: 'OK',
-      onPress: async () => {
-        const requestBody = {
-          name,
-          age,
-          email,
-          password,
-          emergencyContacts,
-        };
-    const payload = {
-      password: password,
-    };
-        const response = await fetch('http://server-url.com/api/signup', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        });
-
-        if (response.ok) {
-          navigation.navigate('FrontHome');
-        } else {
-          // handle error case here
-        }
-      },
-    },
-  ]);
-  
-};
-*/
-
 // ************************************************************Signup sceen************************************************
-//in http request POST
-/*
-function SignUpScreen({ navigation }) {
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
-  const [madison_name, setMadison] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-     const payload = {
-      id: global.user_id,
-      name: name,
-      age: age,
-      madison_name: madison_name
-      email: email,
-      password: password,
-    };
-
-  const handleSubmit = () => {
-    const data = {
-      name,
-      age,
-      madison_name,
-      email,
-      password,
-      /////emergency_contacts: emergencyContacts
-    };
-
-    axios.post('https://example.com/signup', data)
-      .then(response => {
-        console.log('Success:', response.data);
-        navigation.navigate('LogInApp');
-      })
-      .catch(error => {
-        console.error('Error:', error);
-      });
-  };
-
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor:'#F7F3E7' }}>
-      <ScrollView>
-       <Image
-        style={{
-          resizeMode: 'contain',
-          height: 350,
-          width: 350,
-        }}
-        source={require('./assets/signup.png')}
-      />
-      <Text style={[styles.title, { marginTop: -70 }]}>SignUp</Text>
-      <TextInput
-       style={styles.signUpInput}
-        placeholder="Name"
-        value={name}
-        onChangeText={setName}
-        returnKeyType="done"
-        alignItems={'center'}
-        justifyContent={'center'}
-      />
-      <TextInput
-      style={styles.signUpInput}
-        placeholder="Age"
-        value={age}
-        onChangeText={setAge}
-        keyboardType="numeric"
-        returnKeyType="done"
-      />
-            <TextInput
-      style={styles.signUpInput}
-        placeholder="Madison name"
-        value={madison_name}
-        onChangeText={setMadison}
-        keyboardType="email-address"
-        returnKeyType="done"
-      />
-      <TextInput
-      style={styles.signUpInput}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        returnKeyType="done"
-      />
-      <TextInput
-        style={styles.signUpInput}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        returnKeyType="done"
-        secureTextEntry
-      />
-
-      <TouchableOpacity style={styles.saveButton} onPress={NextButtonAlert}>
-          <Text style={styles.buttonText}>Next</Text>
-        </TouchableOpacity>
-        </ScrollView>
-    </View>
-  );
-}
-*/
 function SignUpScreen({ navigation }) {
 	const [fname, setFName] = useState("");
 	const [lname, setLName] = useState("");
@@ -1476,7 +1335,7 @@ function SignUpScreen({ navigation }) {
 	);
 }
 
-//in http request POST
+// ************************************************************EmrContacts sceen************************************************
 function EmrContactsScreen({ navigation }) {
 	const [emergencyContacts, setEmergencyContacts] = useState([""]);
 	const route = useRoute();
@@ -1533,7 +1392,6 @@ function EmrContactsScreen({ navigation }) {
 						},
 					]);
 				} else {
-					// handle errors
 					const data = await response.json();
 					const message = data["result"];
 					Alert.alert("Action Failed", message, [
@@ -1817,16 +1675,16 @@ const styles = StyleSheet.create({
 		width: "80%",
 	},
 	input: {
-		width: 150, // set a fixed width
-		height: 50, // set a fixed height
+		width: 150, 
+		height: 50, 
 		backgroundColor: "white",
 		borderRadius: 10,
 		marginTop: 5,
 		textAlign: "center",
 	},
 	logInInput: {
-		width: 250, // set a fixed width
-		height: 40, // set a fixed height
+		width: 250,
+		height: 40,
 		backgroundColor: "white",
 		borderRadius: 10,
 		marginTop: 5,
@@ -1847,8 +1705,8 @@ const styles = StyleSheet.create({
 	},
 	button: {
 		backgroundColor: "#438C9D",
-		width: 150, // set a fixed width
-		height: 50, // set a fixed height
+		width: 150, 
+		height: 50, 
 		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
@@ -1858,8 +1716,8 @@ const styles = StyleSheet.create({
 		backgroundColor: "white",
 		borderColor: "#438C9D",
 		borderWidth: 2,
-		width: 150, // set a fixed width
-		height: 50, // set a fixed height
+		width: 150, 
+		height: 50, 
 		borderRadius: 10,
 		alignItems: "center",
 		justifyContent: "center",
