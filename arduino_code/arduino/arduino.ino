@@ -22,6 +22,7 @@ AdafruitIO_Feed *feed;
 String ids = WiFi.macAddress();
 const char* id = ids.c_str();
 
+String server_ip = "3.216.251.208";
 
  const int MPU_addr = 0x68; // I2C address of the MPU-6050
  int16_t AcX, AcY, AcZ, Tmp, GyX, GyY, GyZ;
@@ -240,7 +241,7 @@ bool checkStatus(){
 void sendCheckStatus(bool check){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://34.233.185.82:3306/check_connection";//aws server ip: 
+  String serverPath = "http://3.216.251.208:3306/check_connection";//aws server ip: 
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
 
@@ -272,7 +273,7 @@ void sendCheckStatus(bool check){
 void sendFallRequest(){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://34.233.185.82:3306/alert";
+  String serverPath = "http://3.216.251.208:3306/alert";
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
 
@@ -309,7 +310,7 @@ void sendFallRequest(){
 bool sendShakingsData(){
   WiFiClient client;
   HTTPClient http;
-  String serverPath = "http://34.233.185.82:3306/vibrations";
+  String serverPath = "http://3.216.251.208:3306/vibrations";
   // Your Domain name with URL path or IP address with path
   http.begin(client, serverPath.c_str());
   // If you need Node-RED/server authentication, insert user and password below
