@@ -3,13 +3,10 @@ import StableFunctions
 from dotenv import dotenv_values
 
 Port = dotenv_values(".env")
-print(Port["PORT"])
 app = Flask(__name__)
 
-# Configure the remote MySQL server connection
 
-
-@app.route('/test', methods = ['PUT'])
+@app.route('/test', methods = ['PUT'])# testing route
 def call_route_test():
     return StableFunctions.route_test(app, request)
 
@@ -34,19 +31,9 @@ def Call_New_Contact():
     return StableFunctions.New_Contact(app, request)
 
 
-@app.route('/contacts', methods = ['GET'])#from application to server get the contacts of this person
-def Call_Get_Contacts():
-    return StableFunctions.Get_Contacts(app, request)
-
-
 @app.route('/vibrations', methods = ['PUT'])#from bracelet to server
 def Call_Input_Information():
     return StableFunctions.Input_Information(app, request)
-
-
-@app.route('/vibrations', methods = ['DELETE'])#from application to server
-def Call_Delete_Information():
-    return StableFunctions.Delete_Information(app, request)
 
 
 @app.route('/alert', methods = ['PUT'])#from bracelet to server
@@ -91,26 +78,15 @@ def get_user():
 def get_doses_history():
     return StableFunctions.get_doses_history(app, request)
 
-@app.route('/week_history', methods = ['POST'])#get the last dose of a user.
-def Call_week_history():
-    return StableFunctions.get_week_history(app, request)
+@app.route('/all_history', methods = ['POST'])#get the last dose of a user.
+def Call_all_history():
+    return StableFunctions.get_all_history(app, request)
 
 @app.route('/get_day_info', methods = ['POST'])#get the last dose of a user.
 def get_day_info():
     return StableFunctions.get_day_info(app, request)
 
 if __name__ == "__main__":
-    app.run(host = "0.0.0.0", debug=False, port= Port["PORT"])
+    app.run(host = "0.0.0.0", debug=False, port= 3306)
     with open("savedata.txt", 'w') as file:
         print("opened")
-
-
-
-#query = comes with the url and is written at the end of the url
-#to get it out: request.args.to_dict()
-#body = dictionary that come seperated (assuming it is json type)
-#to get it out: dic = json.loads(request.data)
-
-#login dose completed
-#twilio pass: Liorhai11223344551
-#recovery code: jg50MYysQKTuhBClG56myxaW2V48YVQpZ68Ic3W1
